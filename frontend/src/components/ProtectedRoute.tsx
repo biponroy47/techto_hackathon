@@ -10,7 +10,7 @@ export default function ProtectedRoute() {
   }
 
   if (isLoading) {
-    return <main className="centered-page">Loading your account...</main>;
+    return <div className="centered-page">Loading your account...</div>;
   }
 
   if (!user) {

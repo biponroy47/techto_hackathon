@@ -123,14 +123,19 @@ export default function OnboardingPage() {
 
   function handleReset() {
     clearProfile();
-    setProfile(emptyProfile);
+    setError("");
+    setProfile({ ...emptyProfile, fullName: fullName || profile.fullName });
   }
 
   return (
     <section className="page-grid">
       <div className="intro-panel">
         <p className="eyebrow">Step 1</p>
-        <h1>{profile.fullName ? `Hi ${profile.fullName}, tell us your financial picture.` : "Tell the app your financial picture."}</h1>
+        <h1>
+          {profile.fullName
+            ? `Hi ${profile.fullName}, tell us your financial picture.`
+            : "Tell the app your financial picture."}
+        </h1>
         <p>
           Add enough detail for the consultant to understand your income,
           recurring costs, goals, and pressure points.

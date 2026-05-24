@@ -14,7 +14,10 @@ export default function App() {
           <span>Finance Consultant</span>
         </div>
         <nav>
-          <NavLink to="/">Onboarding</NavLink>
+          <NavLink to="/" end>
+            Home
+          </NavLink>
+          <NavLink to="/onboarding">Onboarding</NavLink>
           <NavLink to="/chat">Chat</NavLink>
           {isSupabaseConfigured && !user && <NavLink to="/auth">Log in</NavLink>}
         </nav>

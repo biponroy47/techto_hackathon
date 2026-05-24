@@ -63,7 +63,9 @@ nav {
 }
 
 nav a,
-.text-link {
+.text-link,
+.primary-button,
+.secondary-button {
   color: #24583f;
   text-decoration: none;
   font-weight: 700;
@@ -112,6 +114,97 @@ nav a.active {
 
 main {
   padding: clamp(24px, 5vw, 72px);
+}
+
+.landing-page {
+  display: grid;
+  gap: clamp(24px, 4vw, 40px);
+}
+
+.hero-panel {
+  display: grid;
+  min-height: min(64vh, 680px);
+  place-content: center;
+  max-width: 980px;
+}
+
+.hero-panel h1 {
+  max-width: 920px;
+}
+
+.hero-panel p {
+  color: #4c594f;
+  font-size: clamp(1.05rem, 2vw, 1.28rem);
+  margin: 0 0 24px;
+  max-width: 760px;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.landing-summary {
+  background: #fffdf8;
+  border: 1px solid #d8d0c2;
+  border-radius: 8px;
+  display: grid;
+  gap: 18px;
+  padding: clamp(18px, 3vw, 28px);
+}
+
+.summary-header {
+  align-items: flex-start;
+  display: flex;
+  gap: 12px;
+}
+
+.summary-header svg {
+  color: #2f7d57;
+  margin-top: 3px;
+}
+
+.summary-header div {
+  display: grid;
+  gap: 2px;
+}
+
+.summary-header strong {
+  color: #17211b;
+}
+
+.summary-header span {
+  color: #4c594f;
+}
+
+.feature-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.feature-card {
+  background: #fffdf8;
+  border: 1px solid #d8d0c2;
+  border-radius: 8px;
+  padding: 22px;
+}
+
+.feature-card svg {
+  color: #2f7d57;
+  height: 24px;
+  width: 24px;
+}
+
+.feature-card h2 {
+  font-size: 1.08rem;
+  margin: 16px 0 8px;
+}
+
+.feature-card p {
+  color: #4c594f;
+  margin: 0;
 }
 
 .page-grid,
@@ -402,6 +495,10 @@ dd {
   .page-grid,
   .auth-page,
   .chat-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .feature-grid {
     grid-template-columns: 1fr;
   }
 

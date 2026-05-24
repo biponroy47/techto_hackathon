@@ -25,6 +25,7 @@ app.use(cors({ origin: frontendOrigin }));
 app.use(express.json({ limit: "1mb" }));
 
 const profileSchema = z.object({
+  fullName: z.string().optional(),
   occupation: z.string().optional(),
   status: z.string().optional(),
   monthlyIncome: z.string().optional(),
