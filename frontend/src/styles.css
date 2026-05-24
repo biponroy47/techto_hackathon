@@ -489,6 +489,16 @@ dd {
   font-size: 0.92rem;
 }
 
+.quick-prompts-status {
+  color: #4a6356;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.quick-prompts[aria-busy="true"] button {
+  opacity: 0.85;
+}
+
 .chat-input {
   align-items: stretch;
 }
