@@ -1,32 +1,33 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Send, Sparkles } from "lucide-react";
+import ChatMessageContent from "../components/ChatMessageContent";
 import { useAuth } from "../hooks/useAuth";
+import {
+  DEFAULT_SUGGESTION_PROMPTS,
+  fetchChatSuggestions,
+  sendChatMessage
+} from "../lib/chatApi";
 import { loadUserProfile } from "../lib/profileRepository";
 import { emptyProfile } from "../lib/profileStorage";
 import type { ChatMessage, FinanceProfile } from "../types";
 
-const apiUrl = import.meta.env.VITE_API_URL ?? "http://localhost:8787";
-
-const starterPrompts = [
-  "Create a monthly budget for me.",
-  "Can I afford a trip in 4 months?",
-  "What expenses should I reduce first?"
-];
+const initialAssistantMessage =
+  "I can help you turn your profile into a practical budget or savings plan. What would you like to plan first?";
 
 export default function ChatPage() {
   const { user, fullName } = useAuth();
   const [profile, setProfile] = useState<FinanceProfile>(emptyProfile);
   const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      role: "assistant",
-      content: "I can help you turn your profile into a practical budget or savings plan. What would you like to plan first?"
-    }
+    { role: "assistant", content: initialAssistantMessage }
   ]);
+  const [suggestedPrompts, setSuggestedPrompts] = useState(DEFAULT_SUGGESTION_PROMPTS);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isSuggestionsLoading, setIsSuggestionsLoading] = useState(false);
   const [isProfileLoading, setIsProfileLoading] = useState(true);
   const [error, setError] = useState("");
+  const suggestionsRequestId = useRef(0);
 
   useEffect(() => {
     let isMounted = true;
@@ -58,6 +59,40 @@ export default function ChatPage() {
     };
   }, [fullName, user?.id]);
 
+  const refreshSuggestions = useCallback(
+    async (conversation: ChatMessage[]) => {
+      const requestId = ++suggestionsRequestId.current;
+      setIsSuggestionsLoading(true);
+
+      try {
+        const suggestions = await fetchChatSuggestions(conversation, profile);
+
+        if (requestId !== suggestionsRequestId.current) {
+          return;
+        }
+
+        setSuggestedPrompts(suggestions);
+      } catch {
+        if (requestId === suggestionsRequestId.current) {
+          setSuggestedPrompts(DEFAULT_SUGGESTION_PROMPTS);
+        }
+      } finally {
+        if (requestId === suggestionsRequestId.current) {
+          setIsSuggestionsLoading(false);
+        }
+      }
+    },
+    [profile]
+  );
+
+  useEffect(() => {
+    if (isProfileLoading) {
+      return;
+    }
+
+    void refreshSuggestions(messages);
+  }, [isProfileLoading, messages, refreshSuggestions]);
+
   const filledFields = useMemo(
     () => Object.values(profile).filter((value) => value.trim().length > 0).length,
     [profile]
@@ -70,23 +105,20 @@ export default function ChatPage() {
 
     setError("");
     setInput("");
-    setMessages((current) => [...current, { role: "user", content: message }]);
+
+    const previousMessages = messages;
+    const nextMessages: ChatMessage[] = [
+      ...previousMessages,
+      { role: "user", content: message.trim() }
+    ];
+    setMessages(nextMessages);
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${apiUrl}/api/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message, profile })
-      });
-
-      if (!response.ok) {
-        throw new Error("Chat request failed");
-      }
-
-      const data = (await response.json()) as { reply: string };
+      const data = await sendChatMessage(nextMessages, profile);
       setMessages((current) => [...current, { role: "assistant", content: data.reply }]);
     } catch {
+      setMessages(previousMessages);
       setError("Could not reach the backend. Make sure npm run dev is running.");
     } finally {
       setIsLoading(false);
@@ -134,19 +166,28 @@ export default function ChatPage() {
         <div className="messages">
           {messages.map((message, index) => (
             <div key={`${message.role}-${index}`} className={`message ${message.role}`}>
-              {message.content}
+              <ChatMessageContent content={message.content} variant={message.role} />
             </div>
           ))}
           {isLoading && <div className="message assistant">Thinking through your plan...</div>}
         </div>
 
-        <div className="quick-prompts">
-          {starterPrompts.map((prompt) => (
-            <button key={prompt} type="button" onClick={() => void sendMessage(prompt)}>
-              <Sparkles aria-hidden="true" />
-              {prompt}
-            </button>
-          ))}
+        <div className="quick-prompts" aria-busy={isSuggestionsLoading}>
+          {isSuggestionsLoading && suggestedPrompts.length === 0 ? (
+            <p className="quick-prompts-status">Updating suggestions...</p>
+          ) : (
+            suggestedPrompts.map((prompt, index) => (
+              <button
+                key={`${index}-${prompt}`}
+                type="button"
+                disabled={isLoading || isSuggestionsLoading}
+                onClick={() => void sendMessage(prompt)}
+              >
+                <Sparkles aria-hidden="true" />
+                {prompt}
+              </button>
+            ))
+          )}
         </div>
 
         {error && <p className="error-message">{error}</p>}

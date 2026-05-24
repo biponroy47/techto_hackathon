@@ -511,6 +511,14 @@ textarea:focus {
   box-shadow: 0 0 0 3px rgba(47, 125, 87, 0.15);
 }
 
+input.field-control-error,
+select.field-control-error,
+textarea.field-control-error,
+.money-input.field-control-error {
+  border-color: #c2410c;
+  box-shadow: 0 0 0 3px rgba(194, 65, 12, 0.14);
+}
+
 .field-row {
   display: grid;
   gap: 14px;
@@ -569,6 +577,11 @@ textarea:focus {
   padding: 16px;
 }
 
+.list-editor-error {
+  border-color: #c2410c;
+  box-shadow: 0 0 0 3px rgba(194, 65, 12, 0.1);
+}
+
 .list-header {
   align-items: flex-start;
   display: flex;
@@ -602,6 +615,11 @@ textarea:focus {
   display: grid;
   gap: 10px;
   padding: 12px;
+}
+
+.list-item-error {
+  background: #fff7ed;
+  border-color: #fb923c;
 }
 
 .recurring-grid,
@@ -718,22 +736,84 @@ dd {
   border-radius: 8px;
   max-width: min(78ch, 90%);
   padding: 12px 14px;
-  white-space: pre-wrap;
 }
 
 .message.assistant {
   background: #edf4ea;
   justify-self: start;
+  white-space: normal;
 }
 
 .message.user {
   background: #24583f;
   color: #ffffff;
   justify-self: end;
+  white-space: pre-wrap;
+}
+
+.message-markdown {
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.message-markdown > *:first-child {
+  margin-top: 0;
+}
+
+.message-markdown > *:last-child {
+  margin-bottom: 0;
+}
+
+.message-markdown p {
+  margin: 0 0 0.75em;
+}
+
+.message-markdown .md-heading {
+  color: #1a3d2e;
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0.5em 0 0.35em;
+}
+
+.message-markdown .md-strong {
+  color: #1f4c37;
+  font-weight: 700;
+}
+
+.message-markdown .md-list {
+  margin: 0.35em 0 0.85em;
+  padding-left: 1.35em;
+}
+
+.message-markdown .md-list--ordered {
+  list-style-type: decimal;
+}
+
+.message-markdown .md-list-item {
+  margin: 0.35em 0;
+}
+
+.message-markdown .md-list-item::marker {
+  color: #3d7a5c;
+  font-weight: 600;
+}
+
+.message.user .message-text {
+  margin: 0;
 }
 
 .quick-prompts button {
   font-size: 0.92rem;
+}
+
+.quick-prompts-status {
+  color: #4a6356;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.quick-prompts[aria-busy="true"] button {
+  opacity: 0.85;
 }
 
 .chat-input {

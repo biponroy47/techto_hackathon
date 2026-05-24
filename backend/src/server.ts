@@ -2,7 +2,19 @@ import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
 import OpenAI from "openai";
+import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 import { z } from "zod";
+import {
+  buildMockSuggestions,
+  buildSuggestionsUserMessage,
+  buildUserChatMessage,
+  DEFAULT_SUGGESTION_PROMPTS,
+  fillSuggestions,
+  FINANCE_ASSISTANT_SYSTEM_PROMPT,
+  formatProfileForPrompt,
+  parseSuggestionsJson,
+  SUGGESTIONS_SYSTEM_PROMPT
+} from "./prompts.js";
 
 dotenv.config();
 
@@ -37,98 +49,106 @@ const profileSchema = z.object({
   savingsGoals: z.string().optional()
 });
 
+const chatMessageSchema = z.object({
+  role: z.enum(["user", "assistant"]),
+  content: z.string().min(1).max(4000)
+});
+
 const chatRequestSchema = z.object({
-  message: z.string().min(1).max(2000),
+  messages: z.array(chatMessageSchema).min(1).max(30),
   profile: profileSchema
 });
 
-function buildProfileSummary(profile: z.infer<typeof profileSchema>) {
-  return Object.entries(profile)
-    .filter(([, value]) => value && value.trim().length > 0)
-    .map(([key, value]) => `${labelForProfileKey(key)}: ${formatProfileValue(key, value ?? "")}`)
-    .join("\n");
+const suggestionsRequestSchema = z.object({
+  messages: z.array(chatMessageSchema).min(1).max(30),
+  profile: profileSchema
+});
+
+function getLatestUserMessage(messages: z.infer<typeof chatMessageSchema>[]) {
+  return [...messages].reverse().find((message) => message.role === "user");
 }
 
-function labelForProfileKey(key: string) {
-  const labels: Record<string, string> = {
-    fullName: "Name",
-    occupation: "Occupation",
-    status: "Current situation",
-    monthlyIncome: "Monthly income",
-    housingCost: "Rent or housing cost",
-    subscriptions: "Subscriptions",
-    recurringExpenses: "Recurring expenses",
-    debts: "Debts",
-    upcomingExpenses: "Upcoming expenses",
-    savingsGoals: "Savings goals"
-  };
+function buildCompletionMessages(
+  messages: z.infer<typeof chatMessageSchema>[],
+  profileSummary: string
+): ChatCompletionMessageParam[] {
+  const completionMessages: ChatCompletionMessageParam[] = [
+    { role: "system", content: FINANCE_ASSISTANT_SYSTEM_PROMPT }
+  ];
 
-  return labels[key] ?? key;
-}
-
-function formatProfileValue(key: string, value: string) {
-  if (!["subscriptions", "recurringExpenses", "debts", "upcomingExpenses", "savingsGoals"].includes(key)) {
-    return value;
+  const history = messages.slice(0, -1);
+  for (const message of history.slice(-12)) {
+    completionMessages.push({ role: message.role, content: message.content });
   }
 
-  try {
-    const parsed = JSON.parse(value) as unknown;
-
-    if (!Array.isArray(parsed) || parsed.length === 0) {
-      return "None listed";
-    }
-
-    return parsed.map((item) => formatListItem(key, item)).join("; ");
-  } catch {
-    return value;
-  }
-}
-
-function formatListItem(key: string, item: unknown) {
-  if (!item || typeof item !== "object") {
-    return String(item);
+  const latestUser = getLatestUserMessage(messages);
+  if (latestUser) {
+    completionMessages.push({
+      role: "user",
+      content: buildUserChatMessage(latestUser.content, profileSummary)
+    });
   }
 
-  const record = item as Record<string, unknown>;
-  const name = valueOrFallback(record.name, "Unnamed");
-
-  if (key === "subscriptions" || key === "recurringExpenses") {
-    return `${name} costs $${valueOrFallback(record.cost, "0")} ${valueOrFallback(record.basis, "monthly")} on ${valueOrFallback(record.recurringDate, "unspecified date")}`;
-  }
-
-  if (key === "debts") {
-    const interest = record.interestRate ? ` at ${record.interestRate}% interest` : "";
-    return `${name} ${valueOrFallback(record.type, "debt")} balance $${valueOrFallback(record.amount, "0")}${interest}`;
-  }
-
-  if (key === "upcomingExpenses") {
-    return `${name} ${valueOrFallback(record.type, "expense")} costs $${valueOrFallback(record.cost, "0")} on ${valueOrFallback(record.date, "unspecified date")}`;
-  }
-
-  if (key === "savingsGoals") {
-    const target = record.target ? ` by ${record.target}` : "";
-    return `${name} ${valueOrFallback(record.type, "goal")} target $${valueOrFallback(record.amount, "0")}${target}`;
-  }
-
-  return name;
-}
-
-function valueOrFallback(value: unknown, fallback: string) {
-  return typeof value === "string" && value.trim() ? value : fallback;
+  return completionMessages;
 }
 
 function buildMockAdvice(message: string, profile: z.infer<typeof profileSchema>) {
   const income = profile.monthlyIncome ? `$${profile.monthlyIncome}/month` : "your current income";
 
   return [
-    `Based on ${income}, start with a simple 50/30/20 budget: needs, wants, and savings/debt repayment.`,
-    "Add your Groq API key in backend/.env to get personalized AI responses.",
-    `A good next step for your question, "${message}", is to list fixed costs first, then choose one savings target and one expense to reduce this week.`
+    `Based on ${income}, a simple starting point is a **50/30/20** split: needs, wants, and savings or debt repayment.`,
+    "For personalized AI answers, add your Groq API key in backend/.env.",
+    `For your question about "${message}", list your fixed costs first, then pick **one** savings goal and **one** expense to trim this week.`
   ].join("\n\n");
+}
+
+async function generateSuggestions(
+  messages: z.infer<typeof chatMessageSchema>[],
+  profile: z.infer<typeof profileSchema>
+) {
+  const profileSummary = formatProfileForPrompt(profile);
+
+  if (!groq) {
+    return {
+      suggestions: buildMockSuggestions(messages, profile),
+      mode: "mock" as const
+    };
+  }
+
+  const completion = await groq.chat.completions.create({
+    model: "llama-3.1-8b-instant",
+    temperature: 0.5,
+    messages: [
+      { role: "system", content: SUGGESTIONS_SYSTEM_PROMPT },
+      { role: "user", content: buildSuggestionsUserMessage(messages, profileSummary) }
+    ]
+  });
+
+  const raw = completion.choices[0]?.message?.content ?? "";
+  const parsed = parseSuggestionsJson(raw);
+  const suggestions = fillSuggestions(parsed ?? [], DEFAULT_SUGGESTION_PROMPTS);
+
+  return { suggestions, mode: "groq" as const };
 }
 
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true });
+});
+
+app.post("/api/chat/suggestions", async (req, res) => {
+  const parsed = suggestionsRequestSchema.safeParse(req.body);
+
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid suggestions request." });
+  }
+
+  try {
+    const result = await generateSuggestions(parsed.data.messages, parsed.data.profile);
+    res.json(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Suggestions request failed." });
+  }
 });
 
 app.post("/api/chat", async (req, res) => {
@@ -138,12 +158,18 @@ app.post("/api/chat", async (req, res) => {
     return res.status(400).json({ error: "Invalid chat request." });
   }
 
-  const { message, profile } = parsed.data;
-  const profileSummary = buildProfileSummary(profile);
+  const { messages, profile } = parsed.data;
+  const latestUser = getLatestUserMessage(messages);
+
+  if (!latestUser) {
+    return res.status(400).json({ error: "Last message must be from the user." });
+  }
+
+  const profileSummary = formatProfileForPrompt(profile);
 
   if (!groq) {
     return res.json({
-      reply: buildMockAdvice(message, profile),
+      reply: buildMockAdvice(latestUser.content, profile),
       mode: "mock"
     });
   }
@@ -151,17 +177,8 @@ app.post("/api/chat", async (req, res) => {
   try {
     const completion = await groq.chat.completions.create({
       model: "llama-3.1-8b-instant",
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are FiHo, a careful personal financial guidance assistant. Give practical, beginner-friendly budgeting, cash flow, debt, and savings guidance. Do not claim to be a licensed financial advisor. Avoid legal, tax, or investment guarantees. Keep answers specific, structured, and concise."
-        },
-        {
-          role: "user",
-          content: `User financial profile:\n${profileSummary || "No profile provided yet."}\n\nUser question:\n${message}`
-        }
-      ]
+      temperature: 0.6,
+      messages: buildCompletionMessages(messages, profileSummary)
     });
 
     res.json({
