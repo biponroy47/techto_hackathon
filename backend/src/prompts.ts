@@ -1,4 +1,4 @@
-export const FINANCE_ASSISTANT_SYSTEM_PROMPT = `You are a friendly financial planning assistant in a personal finance app demo.
+export const FINANCE_ASSISTANT_SYSTEM_PROMPT = `You are FiHo, a friendly personal financial guidance assistant.
 
 Your job is to help users budget, save, and plan spending using only the profile information provided. Write like a supportive coach speaking to a real person—not like software, a spreadsheet, or an API.
 
@@ -47,9 +47,60 @@ export function formatProfileForPrompt(profile: Record<string, string | undefine
     .filter(([, value]) => value && value.trim().length > 0)
     .map(([key, value]) => {
       const label = PROFILE_FIELD_LABELS[key] ?? key.replace(/([A-Z])/g, " $1").trim();
-      return `- ${label}: ${value!.trim()}`;
+      return `- ${label}: ${formatProfileValue(key, value!.trim())}`;
     })
     .join("\n");
+}
+
+function formatProfileValue(key: string, value: string) {
+  if (!["subscriptions", "recurringExpenses", "debts", "upcomingExpenses", "savingsGoals"].includes(key)) {
+    return value;
+  }
+
+  try {
+    const parsed = JSON.parse(value) as unknown;
+
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      return "None listed";
+    }
+
+    return parsed.map((item) => formatListItem(key, item)).join("; ");
+  } catch {
+    return value;
+  }
+}
+
+function formatListItem(key: string, item: unknown) {
+  if (!item || typeof item !== "object") {
+    return String(item);
+  }
+
+  const record = item as Record<string, unknown>;
+  const name = valueOrFallback(record.name, "Unnamed");
+
+  if (key === "subscriptions" || key === "recurringExpenses") {
+    return `${name} costs $${valueOrFallback(record.cost, "0")} ${valueOrFallback(record.basis, "monthly")} on ${valueOrFallback(record.recurringDate, "unspecified date")}`;
+  }
+
+  if (key === "debts") {
+    const interest = record.interestRate ? ` at ${record.interestRate}% interest` : "";
+    return `${name} ${valueOrFallback(record.type, "debt")} balance $${valueOrFallback(record.amount, "0")}${interest}`;
+  }
+
+  if (key === "upcomingExpenses") {
+    return `${name} ${valueOrFallback(record.type, "expense")} costs $${valueOrFallback(record.cost, "0")} on ${valueOrFallback(record.date, "unspecified date")}`;
+  }
+
+  if (key === "savingsGoals") {
+    const target = record.target ? ` by ${record.target}` : "";
+    return `${name} ${valueOrFallback(record.type, "goal")} target $${valueOrFallback(record.amount, "0")}${target}`;
+  }
+
+  return name;
+}
+
+function valueOrFallback(value: unknown, fallback: string) {
+  return typeof value === "string" && value.trim() ? value : fallback;
 }
 
 export function buildUserChatMessage(message: string, profileSummary: string) {
