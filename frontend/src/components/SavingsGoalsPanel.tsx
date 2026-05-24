@@ -1,4 +1,4 @@
-import { Plus, Target } from "lucide-react";
+import { Pencil, Plus, Target } from "lucide-react";
 import {
   estimateMonthlySavingsForGoals,
   parseSavingsGoals
@@ -8,6 +8,7 @@ type Props = {
   raw: string;
   onAsk: (prompt: string) => void;
   onOpenAdd: () => void;
+  onEdit: (line: string) => void;
   isLoading?: boolean;
   className?: string;
 };
@@ -31,6 +32,7 @@ export default function SavingsGoalsPanel({
   raw,
   onAsk,
   onOpenAdd,
+  onEdit,
   isLoading = false,
   className = ""
 }: Props) {
@@ -72,24 +74,35 @@ export default function SavingsGoalsPanel({
       ) : (
         <>
           <ul className="side-panel-list">
-            {items.map((item) => (
-              <li key={item.label} className="side-panel-item">
+            {items.map((item, index) => (
+              <li key={`${index}-${item.label}`} className="side-panel-item">
                 <div className="side-panel-item-main">
                   <span className="side-panel-item-label">{formatDisplayLabel(item)}</span>
                   {item.timelineLabel && (
                     <span className="goals-badge">{item.timelineLabel}</span>
                   )}
                 </div>
-                <button
-                  type="button"
-                  className="side-panel-plan-button"
-                  disabled={isLoading}
-                  onClick={() =>
-                    onAsk(`Help me plan savings for this goal: ${item.label}`)
-                  }
-                >
-                  Plan for this
-                </button>
+                <div className="side-panel-item-actions">
+                  <button
+                    type="button"
+                    className="side-panel-edit-button"
+                    disabled={isLoading}
+                    onClick={() => onEdit(item.label)}
+                  >
+                    <Pencil aria-hidden="true" />
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    className="side-panel-plan-button"
+                    disabled={isLoading}
+                    onClick={() =>
+                      onAsk(`Help me plan savings for this goal: ${item.label}`)
+                    }
+                  >
+                    Plan for this
+                  </button>
+                </div>
               </li>
             ))}
           </ul>

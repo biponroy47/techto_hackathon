@@ -65,6 +65,8 @@ export function formatUpcomingExpenseLine(parts: {
   return line.trim();
 }
 
+export { replaceProfileLine } from "./profileLines";
+
 export function appendUpcomingExpense(raw: string, newLine: string): string {
   const line = newLine.trim();
   if (!line) {

@@ -1,10 +1,12 @@
 import { FormEvent, useEffect, useId, useState } from "react";
 import { X } from "lucide-react";
+import { parseLineToFormParts } from "../lib/profileLines";
 import { formatUpcomingExpenseLine } from "../lib/upcomingExpenses";
 
 type Props = {
   isOpen: boolean;
   isSaving?: boolean;
+  editLine?: string | null;
   onClose: () => void;
   onSave: (line: string) => Promise<void>;
 };
@@ -18,10 +20,12 @@ const emptyForm = {
 export default function AddUpcomingExpenseModal({
   isOpen,
   isSaving = false,
+  editLine = null,
   onClose,
   onSave
 }: Props) {
   const titleId = useId();
+  const isEditing = Boolean(editLine);
   const [form, setForm] = useState(emptyForm);
   const [formError, setFormError] = useState("");
 
@@ -30,7 +34,7 @@ export default function AddUpcomingExpenseModal({
       return;
     }
 
-    setForm(emptyForm);
+    setForm(editLine ? parseLineToFormParts(editLine) : emptyForm);
     setFormError("");
 
     function handleKeyDown(event: KeyboardEvent) {
@@ -41,7 +45,7 @@ export default function AddUpcomingExpenseModal({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, isSaving, onClose]);
+  }, [editLine, isOpen, isSaving, onClose]);
 
   if (!isOpen) {
     return null;
@@ -61,7 +65,9 @@ export default function AddUpcomingExpenseModal({
       await onSave(line);
       setForm(emptyForm);
     } catch {
-      setFormError("Could not save this expense. Try again.");
+      setFormError(
+        isEditing ? "Could not update this expense. Try again." : "Could not save this expense. Try again."
+      );
     }
   }
 
@@ -75,7 +81,7 @@ export default function AddUpcomingExpenseModal({
         onClick={(event) => event.stopPropagation()}
       >
         <div className="modal-header">
-          <h2 id={titleId}>Add upcoming expense</h2>
+          <h2 id={titleId}>{isEditing ? "Edit upcoming expense" : "Add upcoming expense"}</h2>
           <button
             type="button"
             className="modal-close"
@@ -130,7 +136,7 @@ export default function AddUpcomingExpenseModal({
               Cancel
             </button>
             <button type="submit" className="primary-button" disabled={isSaving}>
-              {isSaving ? "Adding..." : "Add to upcoming"}
+              {isSaving ? "Saving..." : isEditing ? "Save changes" : "Add to upcoming"}
             </button>
           </div>
         </form>

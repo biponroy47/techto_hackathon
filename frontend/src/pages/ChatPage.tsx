@@ -14,8 +14,11 @@ import {
 } from "../lib/chatApi";
 import { loadUserProfile, saveUserProfile } from "../lib/profileRepository";
 import { emptyProfile } from "../lib/profileStorage";
-import { appendSavingsGoal } from "../lib/savingsGoals";
-import { appendUpcomingExpense } from "../lib/upcomingExpenses";
+import { appendSavingsGoal, replaceProfileLine as replaceSavingsGoalLine } from "../lib/savingsGoals";
+import {
+  appendUpcomingExpense,
+  replaceProfileLine as replaceUpcomingLine
+} from "../lib/upcomingExpenses";
 import type { ChatMessage, FinanceProfile } from "../types";
 
 const initialAssistantMessage =
@@ -35,6 +38,8 @@ export default function ChatPage() {
   const [error, setError] = useState("");
   const [isAddUpcomingOpen, setIsAddUpcomingOpen] = useState(false);
   const [isAddGoalOpen, setIsAddGoalOpen] = useState(false);
+  const [editingUpcomingLine, setEditingUpcomingLine] = useState<string | null>(null);
+  const [editingGoalLine, setEditingGoalLine] = useState<string | null>(null);
   const [isSavingUpcoming, setIsSavingUpcoming] = useState(false);
   const [isSavingGoal, setIsSavingGoal] = useState(false);
   const suggestionsRequestId = useRef(0);
@@ -140,16 +145,23 @@ export default function ChatPage() {
     void sendMessage(input);
   }
 
-  async function handleAddUpcomingExpense(line: string) {
-    const previousProfile = profile;
-    const updatedUpcoming = appendUpcomingExpense(profile.upcomingExpenses, line);
-    const nextProfile: FinanceProfile = {
-      ...profile,
-      upcomingExpenses: updatedUpcoming
-    };
+  function closeUpcomingModal() {
+    setIsAddUpcomingOpen(false);
+    setEditingUpcomingLine(null);
+  }
 
+  function closeGoalModal() {
+    setIsAddGoalOpen(false);
+    setEditingGoalLine(null);
+  }
+
+  async function persistProfile(
+    nextProfile: FinanceProfile,
+    previousProfile: FinanceProfile,
+    setSaving: (value: boolean) => void
+  ) {
     setProfile(nextProfile);
-    setIsSavingUpcoming(true);
+    setSaving(true);
     setError("");
 
     try {
@@ -158,8 +170,23 @@ export default function ChatPage() {
       setProfile(previousProfile);
       throw new Error("save failed");
     } finally {
-      setIsSavingUpcoming(false);
+      setSaving(false);
     }
+  }
+
+  async function handleSaveUpcomingExpense(line: string) {
+    if (editingUpcomingLine) {
+      await handleEditUpcomingExpense(editingUpcomingLine, line);
+      return;
+    }
+
+    const previousProfile = profile;
+    const nextProfile: FinanceProfile = {
+      ...profile,
+      upcomingExpenses: appendUpcomingExpense(profile.upcomingExpenses, line)
+    };
+
+    await persistProfile(nextProfile, previousProfile, setIsSavingUpcoming);
 
     setMessages((current) => [
       ...current,
@@ -169,29 +196,47 @@ export default function ChatPage() {
         content: `Added **${line}** to your Upcoming list. Use **Plan for this** on that item when you want help budgeting for it.`
       }
     ]);
-    setIsAddUpcomingOpen(false);
+    closeUpcomingModal();
   }
 
-  async function handleAddSavingsGoal(line: string) {
+  async function handleEditUpcomingExpense(oldLine: string, newLine: string) {
+    if (oldLine === newLine) {
+      closeUpcomingModal();
+      return;
+    }
+
     const previousProfile = profile;
-    const updatedGoals = appendSavingsGoal(profile.savingsGoals, line);
     const nextProfile: FinanceProfile = {
       ...profile,
-      savingsGoals: updatedGoals
+      upcomingExpenses: replaceUpcomingLine(profile.upcomingExpenses, oldLine, newLine)
     };
 
-    setProfile(nextProfile);
-    setIsSavingGoal(true);
-    setError("");
+    await persistProfile(nextProfile, previousProfile, setIsSavingUpcoming);
 
-    try {
-      await saveUserProfile(user?.id, nextProfile);
-    } catch {
-      setProfile(previousProfile);
-      throw new Error("save failed");
-    } finally {
-      setIsSavingGoal(false);
+    setMessages((current) => [
+      ...current,
+      { role: "user", content: `I updated an upcoming expense to: ${newLine}` },
+      {
+        role: "assistant",
+        content: `Updated your Upcoming list: **${newLine}** (was "${oldLine}").`
+      }
+    ]);
+    closeUpcomingModal();
+  }
+
+  async function handleSaveSavingsGoal(line: string) {
+    if (editingGoalLine) {
+      await handleEditSavingsGoal(editingGoalLine, line);
+      return;
     }
+
+    const previousProfile = profile;
+    const nextProfile: FinanceProfile = {
+      ...profile,
+      savingsGoals: appendSavingsGoal(profile.savingsGoals, line)
+    };
+
+    await persistProfile(nextProfile, previousProfile, setIsSavingGoal);
 
     setMessages((current) => [
       ...current,
@@ -201,7 +246,32 @@ export default function ChatPage() {
         content: `Added **${line}** to your Goals list. Use **Plan for this** on that item when you want help reaching it.`
       }
     ]);
-    setIsAddGoalOpen(false);
+    closeGoalModal();
+  }
+
+  async function handleEditSavingsGoal(oldLine: string, newLine: string) {
+    if (oldLine === newLine) {
+      closeGoalModal();
+      return;
+    }
+
+    const previousProfile = profile;
+    const nextProfile: FinanceProfile = {
+      ...profile,
+      savingsGoals: replaceSavingsGoalLine(profile.savingsGoals, oldLine, newLine)
+    };
+
+    await persistProfile(nextProfile, previousProfile, setIsSavingGoal);
+
+    setMessages((current) => [
+      ...current,
+      { role: "user", content: `I updated a savings goal to: ${newLine}` },
+      {
+        role: "assistant",
+        content: `Updated your Goals list: **${newLine}** (was "${oldLine}").`
+      }
+    ]);
+    closeGoalModal();
   }
 
   const isSidePanelBusy = isLoading || isSavingUpcoming || isSavingGoal;
@@ -211,14 +281,16 @@ export default function ChatPage() {
       <AddUpcomingExpenseModal
         isOpen={isAddUpcomingOpen}
         isSaving={isSavingUpcoming}
-        onClose={() => setIsAddUpcomingOpen(false)}
-        onSave={handleAddUpcomingExpense}
+        editLine={editingUpcomingLine}
+        onClose={closeUpcomingModal}
+        onSave={handleSaveUpcomingExpense}
       />
       <AddSavingsGoalModal
         isOpen={isAddGoalOpen}
         isSaving={isSavingGoal}
-        onClose={() => setIsAddGoalOpen(false)}
-        onSave={handleAddSavingsGoal}
+        editLine={editingGoalLine}
+        onClose={closeGoalModal}
+        onSave={handleSaveSavingsGoal}
       />
       <aside className="profile-summary">
         <p className="eyebrow">Step 2</p>
@@ -280,14 +352,28 @@ export default function ChatPage() {
           <SavingsGoalsPanel
             raw={profile.savingsGoals}
             onAsk={sendMessage}
-            onOpenAdd={() => setIsAddGoalOpen(true)}
+            onOpenAdd={() => {
+              setEditingGoalLine(null);
+              setIsAddGoalOpen(true);
+            }}
+            onEdit={(line) => {
+              setEditingGoalLine(line);
+              setIsAddGoalOpen(true);
+            }}
             isLoading={isSidePanelBusy}
             className="goals-panel--inline"
           />
           <UpcomingExpensesPanel
             raw={profile.upcomingExpenses}
             onAsk={sendMessage}
-            onOpenAdd={() => setIsAddUpcomingOpen(true)}
+            onOpenAdd={() => {
+              setEditingUpcomingLine(null);
+              setIsAddUpcomingOpen(true);
+            }}
+            onEdit={(line) => {
+              setEditingUpcomingLine(line);
+              setIsAddUpcomingOpen(true);
+            }}
             isLoading={isSidePanelBusy}
             className="upcoming-panel--inline"
           />
@@ -313,14 +399,28 @@ export default function ChatPage() {
         <SavingsGoalsPanel
           raw={profile.savingsGoals}
           onAsk={sendMessage}
-          onOpenAdd={() => setIsAddGoalOpen(true)}
+          onOpenAdd={() => {
+            setEditingGoalLine(null);
+            setIsAddGoalOpen(true);
+          }}
+          onEdit={(line) => {
+            setEditingGoalLine(line);
+            setIsAddGoalOpen(true);
+          }}
           isLoading={isSidePanelBusy}
           className="goals-panel--sidebar"
         />
         <UpcomingExpensesPanel
           raw={profile.upcomingExpenses}
           onAsk={sendMessage}
-          onOpenAdd={() => setIsAddUpcomingOpen(true)}
+          onOpenAdd={() => {
+            setEditingUpcomingLine(null);
+            setIsAddUpcomingOpen(true);
+          }}
+          onEdit={(line) => {
+            setEditingUpcomingLine(line);
+            setIsAddUpcomingOpen(true);
+          }}
           isLoading={isSidePanelBusy}
           className="upcoming-panel--sidebar"
         />

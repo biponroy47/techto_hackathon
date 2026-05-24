@@ -674,25 +674,52 @@ dd {
   width: fit-content;
 }
 
+.side-panel-item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.side-panel-edit-button,
 .side-panel-plan-button {
+  align-items: center;
   background: transparent;
   border: 1px solid #24583f;
   border-radius: 8px;
   color: #24583f;
   cursor: pointer;
+  display: inline-flex;
+  flex: 1 1 120px;
   font-size: 0.86rem;
   font-weight: 700;
+  gap: 6px;
+  justify-content: center;
   min-height: 36px;
   padding: 6px 12px;
+}
+
+.side-panel-edit-button {
+  border-color: #9bb0a4;
+  color: #3d5347;
+}
+
+.side-panel-edit-button:hover:not(:disabled) {
+  background: #f3f6f2;
 }
 
 .side-panel-plan-button:hover:not(:disabled) {
   background: #edf4ea;
 }
 
+.side-panel-edit-button:disabled,
 .side-panel-plan-button:disabled {
   cursor: not-allowed;
   opacity: 0.65;
+}
+
+.side-panel-edit-button svg {
+  height: 14px;
+  width: 14px;
 }
 
 .side-panel-footnote {

@@ -61,6 +61,8 @@ export function formatSavingsGoalLine(parts: {
   return line.trim();
 }
 
+export { replaceProfileLine } from "./profileLines";
+
 export function appendSavingsGoal(raw: string, newLine: string): string {
   const line = newLine.trim();
   if (!line) {

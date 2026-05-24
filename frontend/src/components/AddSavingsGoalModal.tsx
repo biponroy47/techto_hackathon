@@ -1,10 +1,12 @@
 import { FormEvent, useEffect, useId, useState } from "react";
 import { X } from "lucide-react";
+import { parseLineToFormParts } from "../lib/profileLines";
 import { formatSavingsGoalLine } from "../lib/savingsGoals";
 
 type Props = {
   isOpen: boolean;
   isSaving?: boolean;
+  editLine?: string | null;
   onClose: () => void;
   onSave: (line: string) => Promise<void>;
 };
@@ -18,10 +20,12 @@ const emptyForm = {
 export default function AddSavingsGoalModal({
   isOpen,
   isSaving = false,
+  editLine = null,
   onClose,
   onSave
 }: Props) {
   const titleId = useId();
+  const isEditing = Boolean(editLine);
   const [form, setForm] = useState(emptyForm);
   const [formError, setFormError] = useState("");
 
@@ -30,7 +34,16 @@ export default function AddSavingsGoalModal({
       return;
     }
 
-    setForm(emptyForm);
+    if (editLine) {
+      const parts = parseLineToFormParts(editLine);
+      setForm({
+        description: parts.description,
+        amount: parts.amount,
+        timeline: parts.timing
+      });
+    } else {
+      setForm(emptyForm);
+    }
     setFormError("");
 
     function handleKeyDown(event: KeyboardEvent) {
@@ -41,7 +54,7 @@ export default function AddSavingsGoalModal({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, isSaving, onClose]);
+  }, [editLine, isOpen, isSaving, onClose]);
 
   if (!isOpen) {
     return null;
@@ -61,7 +74,9 @@ export default function AddSavingsGoalModal({
       await onSave(line);
       setForm(emptyForm);
     } catch {
-      setFormError("Could not save this goal. Try again.");
+      setFormError(
+        isEditing ? "Could not update this goal. Try again." : "Could not save this goal. Try again."
+      );
     }
   }
 
@@ -75,7 +90,7 @@ export default function AddSavingsGoalModal({
         onClick={(event) => event.stopPropagation()}
       >
         <div className="modal-header">
-          <h2 id={titleId}>Add savings goal</h2>
+          <h2 id={titleId}>{isEditing ? "Edit savings goal" : "Add savings goal"}</h2>
           <button
             type="button"
             className="modal-close"
@@ -130,7 +145,7 @@ export default function AddSavingsGoalModal({
               Cancel
             </button>
             <button type="submit" className="primary-button" disabled={isSaving}>
-              {isSaving ? "Adding..." : "Add to goals"}
+              {isSaving ? "Saving..." : isEditing ? "Save changes" : "Add to goals"}
             </button>
           </div>
         </form>
