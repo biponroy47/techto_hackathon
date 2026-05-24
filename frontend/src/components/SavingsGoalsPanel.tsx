@@ -1,8 +1,8 @@
-import { CalendarClock, Plus } from "lucide-react";
+import { Plus, Target } from "lucide-react";
 import {
-  estimateMonthlySetAside,
-  parseUpcomingExpenses
-} from "../lib/upcomingExpenses";
+  estimateMonthlySavingsForGoals,
+  parseSavingsGoals
+} from "../lib/savingsGoals";
 
 type Props = {
   raw: string;
@@ -27,23 +27,23 @@ function formatDisplayLabel(item: { label: string; amount?: number }): string {
   return `${title} — $${item.amount.toLocaleString()}`;
 }
 
-export default function UpcomingExpensesPanel({
+export default function SavingsGoalsPanel({
   raw,
   onAsk,
   onOpenAdd,
   isLoading = false,
   className = ""
 }: Props) {
-  const items = parseUpcomingExpenses(raw);
-  const monthlySetAside = estimateMonthlySetAside(items);
-  const panelClassName = ["upcoming-panel", "side-panel", className].filter(Boolean).join(" ");
+  const items = parseSavingsGoals(raw);
+  const monthlySavings = estimateMonthlySavingsForGoals(items);
+  const panelClassName = ["goals-panel", "side-panel", className].filter(Boolean).join(" ");
 
   return (
-    <aside className={panelClassName} aria-label="Upcoming expenses">
+    <aside className={panelClassName} aria-label="Savings goals">
       <div className="side-panel-header">
         <div className="side-panel-title">
-          <CalendarClock aria-hidden="true" />
-          <h2>Upcoming</h2>
+          <Target aria-hidden="true" />
+          <h2>Goals</h2>
         </div>
         <button
           type="button"
@@ -58,7 +58,7 @@ export default function UpcomingExpensesPanel({
 
       {items.length === 0 ? (
         <div className="side-panel-empty">
-          <p>No upcoming expenses yet. Add trips, tuition, or one-time costs here.</p>
+          <p>No savings goals yet. Add an emergency fund, vacation, or other target here.</p>
           <button
             type="button"
             className="primary-button side-panel-add-button--empty"
@@ -66,7 +66,7 @@ export default function UpcomingExpensesPanel({
             onClick={onOpenAdd}
           >
             <Plus aria-hidden="true" />
-            Add upcoming expense
+            Add savings goal
           </button>
         </div>
       ) : (
@@ -76,8 +76,8 @@ export default function UpcomingExpensesPanel({
               <li key={item.label} className="side-panel-item">
                 <div className="side-panel-item-main">
                   <span className="side-panel-item-label">{formatDisplayLabel(item)}</span>
-                  {item.urgencyLabel && (
-                    <span className="upcoming-badge">{item.urgencyLabel}</span>
+                  {item.timelineLabel && (
+                    <span className="goals-badge">{item.timelineLabel}</span>
                   )}
                 </div>
                 <button
@@ -85,7 +85,7 @@ export default function UpcomingExpensesPanel({
                   className="side-panel-plan-button"
                   disabled={isLoading}
                   onClick={() =>
-                    onAsk(`Help me plan for this upcoming expense: ${item.label}`)
+                    onAsk(`Help me plan savings for this goal: ${item.label}`)
                   }
                 >
                   Plan for this
@@ -94,9 +94,9 @@ export default function UpcomingExpensesPanel({
             ))}
           </ul>
 
-          {monthlySetAside !== null && (
+          {monthlySavings !== null && (
             <p className="side-panel-footnote">
-              ≈ <strong>${monthlySetAside.toLocaleString()}</strong>/mo to set aside
+              ≈ <strong>${monthlySavings.toLocaleString()}</strong>/mo to reach these targets
             </p>
           )}
         </>

@@ -1,7 +1,7 @@
-export type UpcomingExpenseItem = {
+export type SavingsGoalItem = {
   label: string;
   amount?: number;
-  urgencyLabel?: string;
+  timelineLabel?: string;
 };
 
 const AMOUNT_PATTERN = /\$?\s*([\d,]+(?:\.\d{2})?)/;
@@ -18,7 +18,7 @@ function parseAmount(line: string): number | undefined {
   return Number.isFinite(value) ? value : undefined;
 }
 
-function parseUrgency(line: string): string | undefined {
+function parseTimeline(line: string): string | undefined {
   const weeks = line.match(WEEKS_PATTERN);
   if (weeks) {
     return `${weeks[1]} weeks`;
@@ -29,26 +29,22 @@ function parseUrgency(line: string): string | undefined {
     return `${months[1]} months`;
   }
 
-  if (/\bthis month\b/i.test(line)) {
-    return "This month";
-  }
-
-  const dueMatch = line.match(/\b(?:due|by)\s+([A-Za-z]+\s+\d{1,2})\b/i);
-  if (dueMatch) {
-    return `Due ${dueMatch[1]}`;
+  const byMatch = line.match(/\bby\s+([A-Za-z]+(?:\s+\d{1,2})?(?:\s+\d{4})?)\b/i);
+  if (byMatch) {
+    return `By ${byMatch[1]}`;
   }
 
   return undefined;
 }
 
-export function formatUpcomingExpenseLine(parts: {
+export function formatSavingsGoalLine(parts: {
   description: string;
   amount?: string;
-  timing?: string;
+  timeline?: string;
 }): string {
   const description = parts.description.trim();
   const amount = parts.amount?.trim().replace(/[^0-9.]/g, "");
-  const timing = parts.timing?.trim();
+  const timeline = parts.timeline?.trim();
 
   if (!description) {
     return "";
@@ -58,14 +54,14 @@ export function formatUpcomingExpenseLine(parts: {
   if (amount) {
     line += ` $${amount}`;
   }
-  if (timing) {
-    line += ` ${timing}`;
+  if (timeline) {
+    line += ` ${timeline}`;
   }
 
   return line.trim();
 }
 
-export function appendUpcomingExpense(raw: string, newLine: string): string {
+export function appendSavingsGoal(raw: string, newLine: string): string {
   const line = newLine.trim();
   if (!line) {
     return raw;
@@ -78,7 +74,7 @@ export function appendUpcomingExpense(raw: string, newLine: string): string {
   return `${raw.trim()}\n${line}`;
 }
 
-export function parseUpcomingExpenses(raw: string): UpcomingExpenseItem[] {
+export function parseSavingsGoals(raw: string): SavingsGoalItem[] {
   if (!raw.trim()) {
     return [];
   }
@@ -90,12 +86,12 @@ export function parseUpcomingExpenses(raw: string): UpcomingExpenseItem[] {
     .map((line) => ({
       label: line,
       amount: parseAmount(line),
-      urgencyLabel: parseUrgency(line)
+      timelineLabel: parseTimeline(line)
     }));
 }
 
-/** Rough monthly savings needed across items that include amount and timing hints. */
-export function estimateMonthlySetAside(items: UpcomingExpenseItem[]): number | null {
+/** Rough monthly savings needed across goals that include amount and timeline hints. */
+export function estimateMonthlySavingsForGoals(items: SavingsGoalItem[]): number | null {
   let total = 0;
   let counted = 0;
 
@@ -122,12 +118,6 @@ export function estimateMonthlySetAside(items: UpcomingExpenseItem[]): number | 
         total += item.amount / (weekCount / 4.33);
         counted += 1;
       }
-      continue;
-    }
-
-    if (/\bthis month\b/i.test(line)) {
-      total += item.amount;
-      counted += 1;
     }
   }
 

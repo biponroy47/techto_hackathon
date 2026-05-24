@@ -59,7 +59,7 @@ const fields: Array<{
   {
     name: "savingsGoals",
     label: "Savings goals",
-    placeholder: "Emergency fund, vacation, car, rent buffer...",
+    placeholder: "Emergency fund $5000 in 12 months\nVacation $2000 by Aug 2026",
     multiline: true
   }
 ];
