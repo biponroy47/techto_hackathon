@@ -20,8 +20,8 @@ cp frontend/.env.example frontend/.env.local
 Fill in `frontend/.env.local`:
 
 ```bash
-VITE_SUPABASE_URL=https://your-project-id.supabase.co
-VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-supabase-publishable-key
 ```
 
 Restart `npm run dev` after changing env vars.
