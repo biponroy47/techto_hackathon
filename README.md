@@ -30,9 +30,17 @@ techto_hackathon/
 
 ## Setup
 
+Clone the repo:
+
+```bash
+git clone https://github.com/biponroy47/techto_hackathon.git
+cd techto_hackathon
+```
+
+Install everything from the project root:
+
 ```bash
 npm install
-cp .env.example backend/.env
 npm run dev
 ```
 
@@ -40,15 +48,35 @@ Open the frontend at `http://localhost:5173`.
 
 The backend runs at `http://localhost:8787`.
 
-## Team Workflow
-
-Create feature branches from `main`:
+If you are working on AI/backend features, create your local backend env file:
 
 ```bash
-git checkout -b feature/onboarding-form
-git checkout -b feature/chat-api
-git checkout -b feature/chat-ui
+cp backend/.env.example backend/.env
 ```
 
-Keep pull requests small. During the hackathon, merge working slices quickly instead of waiting for perfection.
+Then edit `backend/.env` and add a real `OPENAI_API_KEY` if you have one. The app still runs in mock mode without a real key.
 
+## Team Workflow
+
+Frontend team: work inside `frontend/`.
+
+Backend team: work inside `backend/`.
+
+Everyone should read the step-by-step Git guide before changing files:
+
+- [docs/GIT_WORKFLOW.md](docs/GIT_WORKFLOW.md)
+
+Quick version:
+
+```bash
+git checkout main
+git pull
+git checkout -b feature/short-description
+# make changes
+git status
+git add path/to/changed-file
+git commit -m "Describe the change"
+git push -u origin feature/short-description
+```
+
+Then open a pull request on GitHub into `main`.
