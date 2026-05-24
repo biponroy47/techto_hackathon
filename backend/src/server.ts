@@ -3,6 +3,11 @@ import dotenv from "dotenv";
 import express from "express";
 import OpenAI from "openai";
 import { z } from "zod";
+import {
+  buildUserChatMessage,
+  FINANCE_ASSISTANT_SYSTEM_PROMPT,
+  formatProfileForPrompt
+} from "./prompts.js";
 
 dotenv.config();
 
@@ -42,20 +47,13 @@ const chatRequestSchema = z.object({
   profile: profileSchema
 });
 
-function buildProfileSummary(profile: z.infer<typeof profileSchema>) {
-  return Object.entries(profile)
-    .filter(([, value]) => value && value.trim().length > 0)
-    .map(([key, value]) => `${key}: ${value}`)
-    .join("\n");
-}
-
 function buildMockAdvice(message: string, profile: z.infer<typeof profileSchema>) {
   const income = profile.monthlyIncome ? `$${profile.monthlyIncome}/month` : "your current income";
 
   return [
-    `Based on ${income}, start with a simple 50/30/20 budget: needs, wants, and savings/debt repayment.`,
-    "For this hackathon demo, add your Groq API key in backend/.env to get personalized AI responses.",
-    `A good next step for your question, "${message}", is to list fixed costs first, then choose one savings target and one expense to reduce this week.`
+    `Based on ${income}, a simple starting point is a **50/30/20** split: needs, wants, and savings or debt repayment.`,
+    "For personalized AI answers, add your Groq API key in `backend/.env`.",
+    `For your question about "${message}", list your fixed costs first, then pick **one** savings goal and **one** expense to trim this week.`
   ].join("\n\n");
 }
 
@@ -71,7 +69,7 @@ app.post("/api/chat", async (req, res) => {
   }
 
   const { message, profile } = parsed.data;
-  const profileSummary = buildProfileSummary(profile);
+  const profileSummary = formatProfileForPrompt(profile);
 
   if (!groq) {
     return res.json({
@@ -83,16 +81,10 @@ app.post("/api/chat", async (req, res) => {
   try {
     const completion = await groq.chat.completions.create({
       model: "llama-3.1-8b-instant",
+      temperature: 0.6,
       messages: [
-        {
-          role: "system",
-          content:
-            "You are a careful financial planning assistant for a hackathon demo. Give practical, beginner-friendly budgeting and planning guidance. Do not claim to be a licensed financial advisor. Avoid legal, tax, or investment guarantees. Keep answers specific, structured, and concise."
-        },
-        {
-          role: "user",
-          content: `User financial profile:\n${profileSummary || "No profile provided yet."}\n\nUser question:\n${message}`
-        }
+        { role: "system", content: FINANCE_ASSISTANT_SYSTEM_PROMPT },
+        { role: "user", content: buildUserChatMessage(message, profileSummary) }
       ]
     });
 
