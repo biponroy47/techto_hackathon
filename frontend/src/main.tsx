@@ -6,6 +6,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
 import AuthPage from "./pages/AuthPage";
 import ChatPage from "./pages/ChatPage";
+import DashboardPage from "./pages/DashboardPage";
 import LandingPage from "./pages/LandingPage";
 import OnboardingPage from "./pages/OnboardingPage";
 import "./styles.css";
@@ -21,7 +22,8 @@ const router = createBrowserRouter([
         element: <ProtectedRoute />,
         children: [
           { path: "onboarding", element: <OnboardingPage /> },
-          { path: "chat", element: <ChatPage /> }
+          { path: "chat", element: <ChatPage /> },
+          { path: "dashboard", element: <DashboardPage /> }
         ]
       }
     ]

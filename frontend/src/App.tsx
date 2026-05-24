@@ -19,6 +19,7 @@ export default function App() {
           </NavLink>
           <NavLink to="/onboarding">Onboarding</NavLink>
           <NavLink to="/chat">Chat</NavLink>
+          <NavLink to="/dashboard">Dashboard</NavLink>
           {isSupabaseConfigured && !user && <NavLink to="/auth">Log in</NavLink>}
         </nav>
         {isSupabaseConfigured && user && (

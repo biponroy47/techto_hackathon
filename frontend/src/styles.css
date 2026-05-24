@@ -511,3 +511,250 @@ dd {
     font-size: 2.5rem;
   }
 }
+
+/* ─── Dashboard ────────────────────────────────────────────────────────────── */
+
+.dash-page {
+  min-height: 100vh;
+  background: #D9CEB8;
+  padding: 32px 24px;
+}
+
+.dash-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Header */
+.dash-header {
+  margin-bottom: 24px;
+}
+
+.dash-header-date {
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b6358;
+}
+
+.dash-header-title {
+  margin: 0;
+  font-size: clamp(22px, 4vw, 30px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #1c1a18;
+  line-height: 1.2;
+}
+
+.dash-header-sub {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: #6b6358;
+}
+
+/* Bento Grid */
+.dash-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 16px;
+}
+
+/* Cards */
+.dash-card {
+  background: #EBEBDF;
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 0;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.dash-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.dash-card--orange {
+  background: #E9631A;
+}
+
+/* Column spans */
+.dash-col-2 { grid-column: span 2; }
+.dash-col-3 { grid-column: span 3; }
+.dash-col-4 { grid-column: span 4; }
+.dash-col-5 { grid-column: span 5; }
+.dash-col-6 { grid-column: span 6; }
+.dash-col-8 { grid-column: span 8; }
+.dash-col-12 { grid-column: span 12; }
+
+/* Typography helpers */
+.dash-label {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6b6358;
+}
+
+.dash-sublabel {
+  margin: 0;
+  font-size: 10px;
+  color: rgba(255,255,255,0.7);
+}
+
+.dash-sublabel--muted {
+  color: #6b6358;
+}
+
+.dash-hero-number {
+  margin: 6px 0 0;
+  font-size: 38px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #fff;
+  line-height: 1;
+}
+
+.dash-stat-number {
+  margin: 4px 0 0;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #1c1a18;
+  line-height: 1;
+}
+
+.dash-section-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1c1a18;
+}
+
+/* Row utility */
+.dash-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Sub-card (inside orange hero) */
+.dash-sub-card {
+  flex: 1;
+  border-radius: 12px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.dash-sub-number {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: #fff;
+}
+
+/* Icon circle */
+.dash-icon-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Progress bar */
+.dash-progress-track {
+  height: 8px;
+  border-radius: 9999px;
+  background: #D9CEB8;
+  overflow: hidden;
+}
+
+.dash-progress-fill {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.7s ease;
+}
+
+/* Pill badge */
+.dash-pill {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  background: #D9CEB8;
+  color: #6b6358;
+  white-space: nowrap;
+}
+
+/* Calendar day button */
+.dash-cal-day {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  border: 1.5px solid transparent;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+
+.dash-cal-day:hover {
+  transform: scale(1.08);
+}
+
+.dash-cal-day:active {
+  transform: scale(0.95);
+}
+
+/* Transaction row */
+.dash-txn-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border-radius: 12px;
+  background: #D9CEB8;
+  transition: opacity 0.15s ease;
+}
+
+.dash-txn-row:hover {
+  opacity: 0.8;
+}
+
+.dash-txn-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ── Responsive breakpoints ─────────────────────────────────────────────────── */
+
+@media (max-width: 1024px) {
+  .dash-col-4 { grid-column: span 6; }
+  .dash-col-5 { grid-column: span 6; }
+  .dash-col-3 { grid-column: span 6; }
+  .dash-col-2 { grid-column: span 3; }
+}
+
+@media (max-width: 640px) {
+  .dash-page { padding: 20px 16px; }
+  .dash-grid { gap: 12px; }
+  .dash-col-2,
+  .dash-col-3,
+  .dash-col-4,
+  .dash-col-5 { grid-column: span 12; }
+}
