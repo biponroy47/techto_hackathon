@@ -19,6 +19,7 @@ body {
 
 button,
 input,
+select,
 textarea {
   font: inherit;
 }
@@ -487,6 +488,7 @@ h1 {
 }
 
 input,
+select,
 textarea {
   width: 100%;
   border: 1px solid #cabfab;
@@ -503,9 +505,128 @@ textarea {
 }
 
 input:focus,
+select:focus,
 textarea:focus {
   border-color: #2f7d57;
   box-shadow: 0 0 0 3px rgba(47, 125, 87, 0.15);
+}
+
+.field-row {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.compact-field {
+  gap: 6px;
+}
+
+.compact-field span {
+  font-size: 0.82rem;
+}
+
+.money-input {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #cabfab;
+  border-radius: 8px;
+  display: flex;
+  overflow: hidden;
+}
+
+.money-input:focus-within {
+  border-color: #2f7d57;
+  box-shadow: 0 0 0 3px rgba(47, 125, 87, 0.15);
+}
+
+.money-input span {
+  color: #647165;
+  flex: none;
+  font-weight: 900;
+  padding: 0 10px;
+}
+
+.money-input input {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  min-width: 0;
+}
+
+.money-input input:focus {
+  box-shadow: none;
+}
+
+.percent-input span {
+  padding-left: 0;
+}
+
+.list-editor {
+  border: 1px solid #d8d0c2;
+  border-radius: 8px;
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+
+.list-header {
+  align-items: flex-start;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+}
+
+.list-header h2 {
+  font-size: 1.05rem;
+  margin: 0 0 4px;
+}
+
+.list-header p,
+.empty-list {
+  color: #647165;
+  margin: 0;
+}
+
+.icon-button {
+  aspect-ratio: 1;
+  justify-content: center;
+  min-height: 40px;
+  padding: 8px;
+}
+
+.list-item-grid {
+  align-items: end;
+  background: #f8faf8;
+  border: 1px solid #e3ded3;
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.recurring-grid,
+.debt-grid,
+.upcoming-grid,
+.savings-grid {
+  grid-template-columns: minmax(130px, 1fr) minmax(110px, 0.8fr) minmax(130px, 0.9fr) minmax(150px, 1fr) auto;
+}
+
+.remove-button {
+  align-items: center;
+  background: #fde8df;
+  border: 0;
+  border-radius: 8px;
+  color: #8c2b0f;
+  display: inline-flex;
+  justify-content: center;
+  min-height: 44px;
+  padding: 10px;
+}
+
+.field-error {
+  color: #8c2b0f;
+  font-size: 0.86rem;
+  font-weight: 700;
 }
 
 .form-actions,
@@ -763,6 +884,14 @@ dd {
   .page-grid,
   .auth-page,
   .chat-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .field-row,
+  .recurring-grid,
+  .debt-grid,
+  .upcoming-grid,
+  .savings-grid {
     grid-template-columns: 1fr;
   }
 

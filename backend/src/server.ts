@@ -45,8 +45,76 @@ const chatRequestSchema = z.object({
 function buildProfileSummary(profile: z.infer<typeof profileSchema>) {
   return Object.entries(profile)
     .filter(([, value]) => value && value.trim().length > 0)
-    .map(([key, value]) => `${key}: ${value}`)
+    .map(([key, value]) => `${labelForProfileKey(key)}: ${formatProfileValue(key, value ?? "")}`)
     .join("\n");
+}
+
+function labelForProfileKey(key: string) {
+  const labels: Record<string, string> = {
+    fullName: "Name",
+    occupation: "Occupation",
+    status: "Current situation",
+    monthlyIncome: "Monthly income",
+    housingCost: "Rent or housing cost",
+    subscriptions: "Subscriptions",
+    recurringExpenses: "Recurring expenses",
+    debts: "Debts",
+    upcomingExpenses: "Upcoming expenses",
+    savingsGoals: "Savings goals"
+  };
+
+  return labels[key] ?? key;
+}
+
+function formatProfileValue(key: string, value: string) {
+  if (!["subscriptions", "recurringExpenses", "debts", "upcomingExpenses", "savingsGoals"].includes(key)) {
+    return value;
+  }
+
+  try {
+    const parsed = JSON.parse(value) as unknown;
+
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      return "None listed";
+    }
+
+    return parsed.map((item) => formatListItem(key, item)).join("; ");
+  } catch {
+    return value;
+  }
+}
+
+function formatListItem(key: string, item: unknown) {
+  if (!item || typeof item !== "object") {
+    return String(item);
+  }
+
+  const record = item as Record<string, unknown>;
+  const name = valueOrFallback(record.name, "Unnamed");
+
+  if (key === "subscriptions" || key === "recurringExpenses") {
+    return `${name} costs $${valueOrFallback(record.cost, "0")} ${valueOrFallback(record.basis, "monthly")} on ${valueOrFallback(record.recurringDate, "unspecified date")}`;
+  }
+
+  if (key === "debts") {
+    const interest = record.interestRate ? ` at ${record.interestRate}% interest` : "";
+    return `${name} ${valueOrFallback(record.type, "debt")} balance $${valueOrFallback(record.amount, "0")}${interest}`;
+  }
+
+  if (key === "upcomingExpenses") {
+    return `${name} ${valueOrFallback(record.type, "expense")} costs $${valueOrFallback(record.cost, "0")} on ${valueOrFallback(record.date, "unspecified date")}`;
+  }
+
+  if (key === "savingsGoals") {
+    const target = record.target ? ` by ${record.target}` : "";
+    return `${name} ${valueOrFallback(record.type, "goal")} target $${valueOrFallback(record.amount, "0")}${target}`;
+  }
+
+  return name;
+}
+
+function valueOrFallback(value: unknown, fallback: string) {
+  return typeof value === "string" && value.trim() ? value : fallback;
 }
 
 function buildMockAdvice(message: string, profile: z.infer<typeof profileSchema>) {
