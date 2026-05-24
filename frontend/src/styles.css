@@ -387,18 +387,30 @@ main {
 }
 
 .page-grid,
-.auth-page,
-.chat-layout {
+.auth-page {
   display: grid;
   grid-template-columns: minmax(240px, 0.75fr) minmax(320px, 1.25fr);
   gap: clamp(24px, 4vw, 56px);
   align-items: start;
 }
 
+.chat-layout {
+  display: grid;
+  grid-template-columns: minmax(200px, 0.65fr) minmax(280px, 1.15fr) minmax(220px, 0.55fr);
+  gap: clamp(20px, 3vw, 40px);
+  align-items: start;
+}
+
 .intro-panel,
-.profile-summary {
+.profile-summary,
+.chat-right-rail--sidebar {
   position: sticky;
   top: 100px;
+}
+
+.chat-right-rail {
+  display: grid;
+  gap: 16px;
 }
 
 .eyebrow {
@@ -648,10 +660,16 @@ textarea.field-control-error,
 }
 
 .form-actions,
-.chat-input,
-.quick-prompts {
+.chat-input {
   display: flex;
   flex-wrap: wrap;
+  gap: 10px;
+}
+
+.quick-prompts {
+  align-items: stretch;
+  display: flex;
+  flex-direction: column;
   gap: 10px;
 }
 
@@ -733,14 +751,17 @@ dd {
 }
 
 .message {
-  border-radius: 8px;
+  border-radius: 10px;
   max-width: min(78ch, 90%);
   padding: 12px 14px;
 }
 
 .message.assistant {
   background: #edf4ea;
+  border: 1px solid #d4e6d8;
   justify-self: start;
+  max-width: min(52rem, 96%);
+  padding: 16px 18px;
   white-space: normal;
 }
 
@@ -752,8 +773,9 @@ dd {
 }
 
 .message-markdown {
-  font-size: 0.95rem;
-  line-height: 1.55;
+  color: #1a2e24;
+  font-size: 1rem;
+  line-height: 1.65;
 }
 
 .message-markdown > *:first-child {
@@ -764,25 +786,48 @@ dd {
   margin-bottom: 0;
 }
 
-.message-markdown p {
-  margin: 0 0 0.75em;
+.message-markdown .md-paragraph {
+  margin: 0 0 0.9em;
+}
+
+.message-markdown .md-paragraph:last-child {
+  margin-bottom: 0;
 }
 
 .message-markdown .md-heading {
+  border-bottom: 1px solid #cfe0d4;
   color: #1a3d2e;
-  font-size: 1rem;
-  font-weight: 700;
-  margin: 0.5em 0 0.35em;
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  margin: 1.1em 0 0.5em;
+  padding-bottom: 0.35em;
+}
+
+.message-markdown .md-heading--main {
+  font-size: 1.05rem;
+}
+
+.message-markdown .md-heading--sub {
+  border-bottom: 0;
+  font-size: 0.9rem;
+  margin-top: 0.75em;
+  padding-bottom: 0;
+}
+
+.message-markdown > .md-heading:first-child,
+.message-markdown > .md-paragraph:first-child + .md-heading {
+  margin-top: 0.25em;
 }
 
 .message-markdown .md-strong {
-  color: #1f4c37;
-  font-weight: 700;
+  color: #145a3a;
+  font-weight: 800;
 }
 
 .message-markdown .md-list {
-  margin: 0.35em 0 0.85em;
-  padding-left: 1.35em;
+  margin: 0.25em 0 1em;
+  padding-left: 1.4em;
 }
 
 .message-markdown .md-list--ordered {
@@ -790,12 +835,64 @@ dd {
 }
 
 .message-markdown .md-list-item {
-  margin: 0.35em 0;
+  margin: 0.45em 0;
+  padding-left: 0.15em;
 }
 
 .message-markdown .md-list-item::marker {
-  color: #3d7a5c;
-  font-weight: 600;
+  color: #2f7d57;
+  font-weight: 700;
+}
+
+.message-markdown .md-callout {
+  background: #ffffff;
+  border-left: 4px solid #2f7d57;
+  border-radius: 0 8px 8px 0;
+  color: #2a4034;
+  margin: 0.75em 0 1em;
+  padding: 10px 14px;
+}
+
+.message-markdown .md-callout p {
+  margin: 0;
+}
+
+.message-markdown .md-divider {
+  border: 0;
+  border-top: 1px dashed #b8d4c4;
+  margin: 1em 0;
+}
+
+.message-markdown .md-inline-code {
+  background: #ffffff;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 0.92em;
+  padding: 0.1em 0.35em;
+}
+
+.message-markdown .md-table-wrap {
+  margin: 0.75em 0 1em;
+  overflow-x: auto;
+}
+
+.message-markdown .md-table {
+  border-collapse: collapse;
+  font-size: 0.92rem;
+  width: 100%;
+}
+
+.message-markdown .md-table th,
+.message-markdown .md-table td {
+  border: 1px solid #cfe0d4;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.message-markdown .md-table th {
+  background: #ffffff;
+  color: #1a3d2e;
+  font-weight: 800;
 }
 
 .message.user .message-text {
@@ -804,6 +901,14 @@ dd {
 
 .quick-prompts button {
   font-size: 0.92rem;
+  justify-content: flex-start;
+  text-align: left;
+  white-space: normal;
+  width: 100%;
+}
+
+.quick-prompts button svg {
+  flex: none;
 }
 
 .quick-prompts-status {
@@ -980,7 +1085,8 @@ dd {
   }
 
   .intro-panel,
-  .profile-summary {
+  .profile-summary,
+  .chat-right-rail--sidebar {
     position: static;
   }
 
