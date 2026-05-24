@@ -1,25 +1,20 @@
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { Link, NavLink, Outlet } from "react-router-dom";
 import { BadgeDollarSign, LogOut } from "lucide-react";
 import { useAuth } from "./hooks/useAuth";
 import { isSupabaseConfigured } from "./lib/supabaseClient";
 
 export default function App() {
   const { fullName, user, signOut } = useAuth();
-  const location = useLocation();
-  const isLandingPage = location.pathname === "/";
-  const showProductLinks = !isLandingPage && Boolean(user);
+  const showProductLinks = Boolean(user);
 
   return (
     <div className="app-shell">
       <header className="topbar">
-        <div className="brand">
+        <Link to="/" className="brand" aria-label="FiHo home">
           <BadgeDollarSign aria-hidden="true" />
           <span>FiHo</span>
-        </div>
+        </Link>
         <nav>
-          <NavLink to="/" end>
-            Home
-          </NavLink>
           {showProductLinks && <NavLink to="/onboarding">Onboarding</NavLink>}
           {showProductLinks && <NavLink to="/chat">Chat</NavLink>}
           {isSupabaseConfigured && !user && <NavLink to="/auth">Log in</NavLink>}
