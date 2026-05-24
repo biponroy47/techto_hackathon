@@ -1,23 +1,32 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, CalendarDays, MessageSquareText, ShieldCheck, WalletCards } from "lucide-react";
+import {
+  ArrowRight,
+  CalendarDays,
+  ChartNoAxesCombined,
+  MessageSquareText,
+  PiggyBank,
+  ShieldCheck,
+  Sparkles,
+  WalletCards
+} from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { isSupabaseConfigured } from "../lib/supabaseClient";
 
 const featureCards = [
   {
     icon: WalletCards,
-    title: "Profile-aware planning",
-    copy: "Collect income, fixed costs, debts, subscriptions, and goals in one guided onboarding flow."
+    title: "See the whole horizon",
+    copy: "Bring income, cash flow, debts, subscriptions, and goals together in one personal profile."
   },
   {
     icon: MessageSquareText,
-    title: "AI budget consultant",
-    copy: "Ask practical questions about saving, budgeting, upcoming trips, and expense tradeoffs."
+    title: "Guidance when you need it",
+    copy: "Ask questions about budgeting, saving, debt payoff, upcoming costs, and future life goals."
   },
   {
     icon: CalendarDays,
-    title: "Built for the next step",
-    copy: "The structure is ready for transaction uploads and calendar-based cashflow views."
+    title: "Plan ahead with confidence",
+    copy: "Understand monthly expenses, upcoming payments, and the habits that move you forward."
   }
 ];
 
@@ -27,46 +36,81 @@ export default function LandingPage() {
 
   return (
     <section className="landing-page">
-      <div className="hero-panel">
-        <p className="eyebrow">Finance Consultant</p>
-        <h1>Turn your financial picture into a plan you can actually follow.</h1>
-        <p>
-          Build a personal profile, save it to your account, and chat with an AI
-          consultant that understands your income, costs, goals, and upcoming expenses.
-        </p>
-        <div className="hero-actions">
-          <Link to={primaryDestination} className="primary-button">
-            <ArrowRight aria-hidden="true" />
-            {isSupabaseConfigured && !user ? "Create account" : "Start onboarding"}
-          </Link>
-          <Link to="/auth" className="secondary-button">
-            Log in
-          </Link>
+      <div className="landing-hero">
+        <div className="hero-panel">
+          <p className="eyebrow">FiHo - Financial Horizon</p>
+          <h1>Your personal financial advisor for the life you want next.</h1>
+          <p>
+            FiHo helps you understand your cash flow, budget with intention, manage debts,
+            save for future goals, and make clearer financial decisions as your life changes.
+          </p>
+          <div className="hero-actions">
+            <Link to={primaryDestination} className="primary-button">
+              <ArrowRight aria-hidden="true" />
+              {isSupabaseConfigured && !user ? "Create account" : "Start planning"}
+            </Link>
+            <Link to="/auth" className="secondary-button">
+              Log in
+            </Link>
+          </div>
         </div>
-      </div>
 
-      <div className="landing-summary">
-        <div className="summary-header">
-          <ShieldCheck aria-hidden="true" />
-          <div>
-            <strong>Hackathon-safe demo</strong>
-            <span>Use sample data, not real bank credentials or account numbers.</span>
+        <div className="finance-visual" aria-label="Animated FiHo financial guidance preview">
+          <div className="visual-card advisor-card">
+            <div className="card-title">
+              <Sparkles aria-hidden="true" />
+              FiHo Advisor
+            </div>
+            <div className="chat-bubble user-bubble">How do I save for a $1,200 trip?</div>
+            <div className="chat-bubble agent-bubble">
+              Set aside $300/month and reduce flexible spending by $90.
+            </div>
+          </div>
+
+          <div className="visual-card calculator-card">
+            <div className="card-title">
+              <ChartNoAxesCombined aria-hidden="true" />
+              Cash flow scan
+            </div>
+            <div className="cost-row">
+              <span>Income</span>
+              <strong>$3,200</strong>
+            </div>
+            <div className="cost-row">
+              <span>Fixed costs</span>
+              <strong>$1,760</strong>
+            </div>
+            <div className="cost-row">
+              <span>Left to plan</span>
+              <strong>$1,440</strong>
+            </div>
+            <div className="progress-track">
+              <span className="progress-fill" />
+            </div>
+          </div>
+
+          <div className="visual-card calendar-card">
+            <div className="card-title">
+              <CalendarDays aria-hidden="true" />
+              Financial horizon
+            </div>
+            <div className="mini-calendar">
+              {["Rent", "Pay", "Trip", "Loan"].map((item) => (
+                <div key={item} className="calendar-chip">
+                  {item}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="visual-card tip-card">
+            <div className="card-title">
+              <PiggyBank aria-hidden="true" />
+              Goal guidance
+            </div>
+            <p>Move $75 weekly after payday toward your next major goal.</p>
           </div>
         </div>
-        <dl>
-          <div>
-            <dt>Flow</dt>
-            <dd>Account to onboarding to chat</dd>
-          </div>
-          <div>
-            <dt>Storage</dt>
-            <dd>Supabase profile per user</dd>
-          </div>
-          <div>
-            <dt>AI</dt>
-            <dd>Groq-backed consultant API</dd>
-          </div>
-        </dl>
       </div>
 
       <div className="feature-grid">
@@ -81,6 +125,30 @@ export default function LandingPage() {
             </article>
           );
         })}
+      </div>
+
+      <div className="landing-summary">
+        <div className="summary-header">
+          <ShieldCheck aria-hidden="true" />
+          <div>
+            <strong>Personal guidance, grounded in your context</strong>
+            <span>FiHo uses your profile to give clearer budgeting, cash flow, debt, and savings guidance.</span>
+          </div>
+        </div>
+        <dl>
+          <div>
+            <dt>Profile</dt>
+            <dd>Build your financial picture</dd>
+          </div>
+          <div>
+            <dt>Cash flow</dt>
+            <dd>Track income, costs, and timing</dd>
+          </div>
+          <div>
+            <dt>Guidance</dt>
+            <dd>Get next steps for future goals</dd>
+          </div>
+        </dl>
       </div>
     </section>
   );
