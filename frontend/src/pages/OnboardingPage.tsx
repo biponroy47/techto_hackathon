@@ -1,7 +1,9 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, RotateCcw, Save } from "lucide-react";
-import { clearProfile, emptyProfile, loadProfile, saveProfile } from "../lib/profileStorage";
+import { useAuth } from "../hooks/useAuth";
+import { loadUserProfile, saveUserProfile } from "../lib/profileRepository";
+import { clearProfile, emptyProfile } from "../lib/profileStorage";
 import type { FinanceProfile } from "../types";
 
 const fields: Array<{
@@ -64,16 +66,59 @@ const fields: Array<{
 
 export default function OnboardingPage() {
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<FinanceProfile>(() => loadProfile());
+  const { user, fullName } = useAuth();
+  const [profile, setProfile] = useState<FinanceProfile>(emptyProfile);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    loadUserProfile(user?.id)
+      .then((savedProfile) => {
+        if (!isMounted) {
+          return;
+        }
+
+        setProfile({
+          ...savedProfile,
+          fullName: savedProfile.fullName || fullName
+        });
+      })
+      .catch(() => {
+        if (isMounted) {
+          setError("Could not load your saved onboarding profile.");
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [fullName, user?.id]);
 
   function updateField(name: keyof FinanceProfile, value: string) {
     setProfile((current) => ({ ...current, [name]: value }));
   }
 
-  function handleSubmit(event: FormEvent) {
+  async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    saveProfile(profile);
-    navigate("/chat");
+    setError("");
+    setIsSaving(true);
+
+    try {
+      await saveUserProfile(user?.id, profile);
+      navigate("/chat");
+    } catch {
+      setError("Could not save your profile. Check your Supabase setup and try again.");
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   function handleReset() {
@@ -85,18 +130,30 @@ export default function OnboardingPage() {
     <section className="page-grid">
       <div className="intro-panel">
         <p className="eyebrow">Step 1</p>
-        <h1>Tell the app your financial picture.</h1>
+        <h1>{profile.fullName ? `Hi ${profile.fullName}, tell us your financial picture.` : "Tell the app your financial picture."}</h1>
         <p>
           Add enough detail for the consultant to understand your income,
           recurring costs, goals, and pressure points.
         </p>
         <div className="tip-box">
-          <strong>Hackathon shortcut:</strong> this saves in your browser for now.
-          Add Supabase after the demo flow is working.
+          <strong>Account profile:</strong> your onboarding answers are tied to
+          your login when Supabase is configured.
         </div>
       </div>
 
       <form className="onboarding-form" onSubmit={handleSubmit}>
+        {isLoading && <p className="status-message">Loading your profile...</p>}
+        {error && <p className="error-message">{error}</p>}
+
+        <label className="field">
+          <span>Name</span>
+          <input
+            value={profile.fullName}
+            placeholder="Bipon Roy"
+            onChange={(event) => updateField("fullName", event.target.value)}
+          />
+        </label>
+
         {fields.map((field) => (
           <label key={field.name} className="field">
             <span>{field.label}</span>
@@ -121,11 +178,11 @@ export default function OnboardingPage() {
             <RotateCcw aria-hidden="true" />
             Reset
           </button>
-          <button type="submit" className="primary-button">
+          <button type="submit" className="primary-button" disabled={isSaving || isLoading}>
             <Save aria-hidden="true" />
-            Save profile
+            {isSaving ? "Saving..." : "Save profile"}
           </button>
-          <button type="submit" className="primary-button">
+          <button type="submit" className="primary-button" disabled={isSaving || isLoading}>
             <ArrowRight aria-hidden="true" />
             Go to chat
           </button>

@@ -1,8 +1,10 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Send, Sparkles } from "lucide-react";
-import { loadProfile } from "../lib/profileStorage";
-import type { ChatMessage } from "../types";
+import { useAuth } from "../hooks/useAuth";
+import { loadUserProfile } from "../lib/profileRepository";
+import { emptyProfile } from "../lib/profileStorage";
+import type { ChatMessage, FinanceProfile } from "../types";
 
 const apiUrl = import.meta.env.VITE_API_URL ?? "http://localhost:8787";
 
@@ -13,17 +15,48 @@ const starterPrompts = [
 ];
 
 export default function ChatPage() {
-  const [profile] = useState(() => loadProfile());
+  const { user, fullName } = useAuth();
+  const [profile, setProfile] = useState<FinanceProfile>(emptyProfile);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: "assistant",
-      content:
-        "I can help you turn your profile into a practical budget or savings plan. What would you like to plan first?"
+      content: "I can help you turn your profile into a practical budget or savings plan. What would you like to plan first?"
     }
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isProfileLoading, setIsProfileLoading] = useState(true);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    loadUserProfile(user?.id)
+      .then((savedProfile) => {
+        if (!isMounted) {
+          return;
+        }
+
+        setProfile({
+          ...savedProfile,
+          fullName: savedProfile.fullName || fullName
+        });
+      })
+      .catch(() => {
+        if (isMounted) {
+          setError("Could not load your saved profile.");
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsProfileLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [fullName, user?.id]);
 
   const filledFields = useMemo(
     () => Object.values(profile).filter((value) => value.trim().length > 0).length,
@@ -69,9 +102,9 @@ export default function ChatPage() {
     <section className="chat-layout">
       <aside className="profile-summary">
         <p className="eyebrow">Step 2</p>
-        <h1>Ask your financial consultant.</h1>
+        <h1>{profile.fullName ? `${profile.fullName}'s financial consultant.` : "Ask your financial consultant."}</h1>
         <p>
-          Profile completeness: <strong>{filledFields}/9</strong>
+          Profile completeness: <strong>{filledFields}/10</strong>
         </p>
         <dl>
           <div>
@@ -93,6 +126,7 @@ export default function ChatPage() {
       </aside>
 
       <div className="chat-panel">
+        {isProfileLoading && <p className="status-message">Loading your saved profile...</p>}
         <div className="messages">
           {messages.map((message, index) => (
             <div key={`${message.role}-${index}`} className={`message ${message.role}`}>

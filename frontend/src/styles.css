@@ -58,6 +58,7 @@ button {
 
 nav {
   display: flex;
+  align-items: center;
   gap: 8px;
 }
 
@@ -77,11 +78,44 @@ nav a.active {
   background: #e5efe7;
 }
 
+.account-chip {
+  align-items: center;
+  background: #edf4ea;
+  border: 1px solid #cddfcf;
+  border-radius: 8px;
+  color: #1f4c37;
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+  padding: 6px 8px 6px 12px;
+}
+
+.account-chip span {
+  font-size: 0.9rem;
+  font-weight: 800;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-chip button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: #24583f;
+  display: inline-flex;
+  justify-content: center;
+  min-height: 32px;
+  padding: 4px;
+}
+
 main {
   padding: clamp(24px, 5vw, 72px);
 }
 
 .page-grid,
+.auth-page,
 .chat-layout {
   display: grid;
   grid-template-columns: minmax(240px, 0.75fr) minmax(320px, 1.25fr);
@@ -128,6 +162,7 @@ h1 {
 }
 
 .onboarding-form,
+.auth-form,
 .chat-panel,
 .profile-summary {
   background: #fffdf8;
@@ -140,6 +175,35 @@ h1 {
   display: grid;
   gap: 18px;
   padding: clamp(18px, 4vw, 32px);
+}
+
+.auth-form {
+  align-content: start;
+  display: grid;
+  gap: 18px;
+  padding: clamp(18px, 4vw, 32px);
+}
+
+.auth-tabs {
+  background: #e8efe7;
+  border-radius: 8px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 4px;
+}
+
+.auth-tabs button {
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: #24583f;
+  font-weight: 800;
+  min-height: 40px;
+}
+
+.auth-tabs button.active {
+  background: #ffffff;
+  box-shadow: 0 4px 16px rgba(45, 36, 22, 0.08);
 }
 
 .field {
@@ -296,6 +360,29 @@ dd {
   padding: 10px 12px;
 }
 
+.success-message,
+.status-message {
+  border-radius: 8px;
+  margin: 0;
+  padding: 10px 12px;
+}
+
+.success-message {
+  background: #e5efe7;
+  color: #1f4c37;
+}
+
+.status-message {
+  background: #edf2f5;
+  color: #43515a;
+}
+
+.centered-page {
+  display: grid;
+  min-height: 55vh;
+  place-items: center;
+}
+
 .disclaimer {
   color: #647165;
   font-size: 0.86rem;
@@ -313,6 +400,7 @@ dd {
   }
 
   .page-grid,
+  .auth-page,
   .chat-layout {
     grid-template-columns: 1fr;
   }

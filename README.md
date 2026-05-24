@@ -14,10 +14,9 @@ For the first build, keep it to two pages:
 - **Frontend**: React + Vite + TypeScript
 - **Backend**: Node.js + Express + TypeScript
 - **AI**: Groq API through the backend
-- **Database for demo**: browser localStorage first
-- **Database after demo works**: Supabase table for user profiles and chat sessions
+- **Auth and database**: Supabase Auth + a `profiles` table
 
-For a hackathon, build the happy path first. localStorage is fine for the first demo because it keeps the product moving. Add Supabase once the screens and AI flow are working.
+For a hackathon, build the happy path first. The app can still run in local demo mode without Supabase env vars, but real accounts and saved onboarding profiles use Supabase.
 
 ## Project Structure
 
@@ -55,6 +54,21 @@ cp backend/.env.example backend/.env
 ```
 
 Then edit `backend/.env` and add a real `GROQ_API_KEY` if you have one. The app still runs in mock mode without a real key.
+
+If you are working on accounts/onboarding persistence, create a Supabase project and add these values to a frontend env file:
+
+```bash
+cp frontend/.env.example frontend/.env.local
+```
+
+Then set these values in `frontend/.env.local`:
+
+```bash
+VITE_SUPABASE_URL=your-project-url
+VITE_SUPABASE_ANON_KEY=your-anon-key
+```
+
+Follow the database setup in [docs/SUPABASE_SETUP.md](docs/SUPABASE_SETUP.md).
 
 ## Team Workflow
 
