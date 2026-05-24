@@ -7,6 +7,7 @@ export default function App() {
   const { fullName, user, signOut } = useAuth();
   const location = useLocation();
   const isLandingPage = location.pathname === "/";
+  const showProductLinks = !isLandingPage && Boolean(user);
 
   return (
     <div className="app-shell">
@@ -19,8 +20,8 @@ export default function App() {
           <NavLink to="/" end>
             Home
           </NavLink>
-          {!isLandingPage && <NavLink to="/onboarding">Onboarding</NavLink>}
-          {!isLandingPage && <NavLink to="/chat">Chat</NavLink>}
+          {showProductLinks && <NavLink to="/onboarding">Onboarding</NavLink>}
+          {showProductLinks && <NavLink to="/chat">Chat</NavLink>}
           {isSupabaseConfigured && !user && <NavLink to="/auth">Log in</NavLink>}
         </nav>
         {isSupabaseConfigured && user && (
