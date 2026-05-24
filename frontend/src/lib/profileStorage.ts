@@ -10,7 +10,8 @@ export const emptyProfile: FinanceProfile = {
   recurringExpenses: "",
   debts: "",
   upcomingExpenses: "",
-  savingsGoals: ""
+  savingsGoals: "",
+  netWorthItems: "",
 };
 
 const storageKey = "finance-consultant-profile";

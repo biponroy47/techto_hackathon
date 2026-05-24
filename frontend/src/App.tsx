@@ -15,14 +15,20 @@ export default function App() {
           <span>FiHo</span>
         </Link>
         <nav>
-          {showProductLinks && <NavLink to="/onboarding">Onboarding</NavLink>}
-          {showProductLinks && <NavLink to="/chat">Chat</NavLink>}
-          {isSupabaseConfigured && !user && <NavLink to="/auth">Log in</NavLink>}
+          {showProductLinks && <NavLink to="/onboarding">Profile</NavLink>}
+          {showProductLinks && <NavLink to="/chat">Dashboard</NavLink>}
+          {isSupabaseConfigured && !user && (
+            <NavLink to="/auth">Log in</NavLink>
+          )}
         </nav>
         {isSupabaseConfigured && user && (
           <div className="account-chip">
             <span>{fullName || user.email}</span>
-            <button type="button" onClick={() => void signOut()} aria-label="Sign out">
+            <button
+              type="button"
+              onClick={() => void signOut()}
+              aria-label="Sign out"
+            >
               <LogOut aria-hidden="true" />
             </button>
           </div>

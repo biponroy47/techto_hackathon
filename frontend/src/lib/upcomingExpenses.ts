@@ -2,6 +2,7 @@ export type UpcomingExpenseItem = {
   label: string;
   amount?: number;
   urgencyLabel?: string;
+  monthsUntil?: number;
 };
 
 const AMOUNT_PATTERN = /\$?\s*([\d,]+(?:\.\d{2})?)/;
@@ -80,9 +81,83 @@ export function appendUpcomingExpense(raw: string, newLine: string): string {
   return `${raw.trim()}\n${line}`;
 }
 
+type StructuredUpcomingRow = {
+  id?: string;
+  name?: string;
+  cost?: string;
+  date?: string;
+  type?: string;
+};
+
+function parseDateLabel(dateStr: string): string | undefined {
+  if (!dateStr) return undefined;
+  try {
+    const d = new Date(dateStr + "T00:00:00");
+    if (isNaN(d.getTime())) return undefined;
+    return d.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  } catch {
+    return undefined;
+  }
+}
+
+function parseDateMonths(dateStr: string): number | undefined {
+  if (!dateStr) return undefined;
+  try {
+    const d = new Date(dateStr + "T00:00:00");
+    if (isNaN(d.getTime())) return undefined;
+    const diffMs = d.getTime() - Date.now();
+    const months = diffMs / (1000 * 60 * 60 * 24 * 30.44);
+    return months > 0 ? months : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function tryParseStructuredUpcoming(raw: string): UpcomingExpenseItem[] | null {
+  if (!raw.trim().startsWith("[")) return null;
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return null;
+    const rows = parsed as StructuredUpcomingRow[];
+    const sorted = [...rows].sort((a, b) => {
+      const da = a.date ?? "";
+      const db = b.date ?? "";
+      if (!da && !db) return 0;
+      if (!da) return 1;
+      if (!db) return -1;
+      return da.localeCompare(db);
+    });
+    return sorted
+      .map((row): UpcomingExpenseItem | null => {
+        const name = row.name?.trim() ?? "";
+        if (!name) return null;
+        const costVal = row.cost?.trim() ? parseFloat(row.cost) : undefined;
+        const amount =
+          costVal !== undefined && Number.isFinite(costVal) && costVal > 0
+            ? costVal
+            : undefined;
+        const urgencyLabel = parseDateLabel(row.date ?? "");
+        const monthsUntil = parseDateMonths(row.date ?? "");
+        return { label: name, amount, urgencyLabel, monthsUntil };
+      })
+      .filter((item): item is UpcomingExpenseItem => item !== null);
+  } catch {
+    return null;
+  }
+}
+
 export function parseUpcomingExpenses(raw: string): UpcomingExpenseItem[] {
   if (!raw.trim()) {
     return [];
+  }
+
+  const structured = tryParseStructuredUpcoming(raw);
+  if (structured !== null) {
+    return structured;
   }
 
   return raw
@@ -92,17 +167,25 @@ export function parseUpcomingExpenses(raw: string): UpcomingExpenseItem[] {
     .map((line) => ({
       label: line,
       amount: parseAmount(line),
-      urgencyLabel: parseUrgency(line)
+      urgencyLabel: parseUrgency(line),
     }));
 }
 
 /** Rough monthly savings needed across items that include amount and timing hints. */
-export function estimateMonthlySetAside(items: UpcomingExpenseItem[]): number | null {
+export function estimateMonthlySetAside(
+  items: UpcomingExpenseItem[],
+): number | null {
   let total = 0;
   let counted = 0;
 
   for (const item of items) {
     if (item.amount === undefined) {
+      continue;
+    }
+
+    if (item.monthsUntil !== undefined && item.monthsUntil > 0) {
+      total += item.amount / item.monthsUntil;
+      counted += 1;
       continue;
     }
 
