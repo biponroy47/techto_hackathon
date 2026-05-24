@@ -350,7 +350,7 @@ textarea:focus {
 }
 
 .quick-prompts {
-  align-items: stretch;
+  align-items: flex-start;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -443,9 +443,10 @@ dd {
   background: #edf4ea;
   border: 1px solid #d4e6d8;
   justify-self: start;
-  max-width: min(52rem, 96%);
+  max-width: min(42rem, 92%);
   padding: 16px 18px;
   white-space: normal;
+  width: fit-content;
 }
 
 .message.user {
@@ -585,9 +586,10 @@ dd {
 .quick-prompts button {
   font-size: 0.92rem;
   justify-content: flex-start;
+  max-width: min(100%, 22rem);
   text-align: left;
   white-space: normal;
-  width: 100%;
+  width: fit-content;
 }
 
 .quick-prompts button svg {
