@@ -2,7 +2,19 @@ import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
 import OpenAI from "openai";
+import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 import { z } from "zod";
+import {
+  buildMockSuggestions,
+  buildSuggestionsUserMessage,
+  buildUserChatMessage,
+  DEFAULT_SUGGESTION_PROMPTS,
+  fillSuggestions,
+  FINANCE_ASSISTANT_SYSTEM_PROMPT,
+  formatProfileForPrompt,
+  parseSuggestionsJson,
+  SUGGESTIONS_SYSTEM_PROMPT,
+} from "./prompts.js";
 
 dotenv.config();
 
@@ -17,7 +29,7 @@ const hasRealGroqKey =
 const groq = hasRealGroqKey
   ? new OpenAI({
       apiKey: groqApiKey,
-      baseURL: "https://api.groq.com/openai/v1"
+      baseURL: "https://api.groq.com/openai/v1",
     })
   : null;
 
@@ -34,33 +46,121 @@ const profileSchema = z.object({
   recurringExpenses: z.string().optional(),
   debts: z.string().optional(),
   upcomingExpenses: z.string().optional(),
-  savingsGoals: z.string().optional()
+  savingsGoals: z.string().optional(),
+  netWorthItems: z.string().optional(),
+});
+
+const chatMessageSchema = z.object({
+  role: z.enum(["user", "assistant"]),
+  content: z.string().min(1).max(4000),
 });
 
 const chatRequestSchema = z.object({
-  message: z.string().min(1).max(2000),
-  profile: profileSchema
+  messages: z.array(chatMessageSchema).min(1).max(30),
+  profile: profileSchema,
 });
 
-function buildProfileSummary(profile: z.infer<typeof profileSchema>) {
-  return Object.entries(profile)
-    .filter(([, value]) => value && value.trim().length > 0)
-    .map(([key, value]) => `${key}: ${value}`)
-    .join("\n");
+const suggestionsRequestSchema = z.object({
+  messages: z.array(chatMessageSchema).min(1).max(30),
+  profile: profileSchema,
+});
+
+function getLatestUserMessage(messages: z.infer<typeof chatMessageSchema>[]) {
+  return [...messages].reverse().find((message) => message.role === "user");
 }
 
-function buildMockAdvice(message: string, profile: z.infer<typeof profileSchema>) {
-  const income = profile.monthlyIncome ? `$${profile.monthlyIncome}/month` : "your current income";
+function buildCompletionMessages(
+  messages: z.infer<typeof chatMessageSchema>[],
+  profileSummary: string,
+): ChatCompletionMessageParam[] {
+  const completionMessages: ChatCompletionMessageParam[] = [
+    { role: "system", content: FINANCE_ASSISTANT_SYSTEM_PROMPT },
+  ];
+
+  const history = messages.slice(0, -1);
+  for (const message of history.slice(-12)) {
+    completionMessages.push({ role: message.role, content: message.content });
+  }
+
+  const latestUser = getLatestUserMessage(messages);
+  if (latestUser) {
+    completionMessages.push({
+      role: "user",
+      content: buildUserChatMessage(latestUser.content, profileSummary),
+    });
+  }
+
+  return completionMessages;
+}
+
+function buildMockAdvice(
+  message: string,
+  profile: z.infer<typeof profileSchema>,
+) {
+  const income = profile.monthlyIncome
+    ? `$${profile.monthlyIncome}/month`
+    : "your current income";
 
   return [
-    `Based on ${income}, start with a simple 50/30/20 budget: needs, wants, and savings/debt repayment.`,
-    "For this hackathon demo, add your Groq API key in backend/.env to get personalized AI responses.",
-    `A good next step for your question, "${message}", is to list fixed costs first, then choose one savings target and one expense to reduce this week.`
+    `Based on ${income}, a simple starting point is a **50/30/20** split: needs, wants, and savings or debt repayment.`,
+    "For personalized AI answers, add your Groq API key in backend/.env.",
+    `For your question about "${message}", list your fixed costs first, then pick **one** savings goal and **one** expense to trim this week.`,
   ].join("\n\n");
+}
+
+async function generateSuggestions(
+  messages: z.infer<typeof chatMessageSchema>[],
+  profile: z.infer<typeof profileSchema>,
+) {
+  const profileSummary = formatProfileForPrompt(profile);
+
+  if (!groq) {
+    return {
+      suggestions: buildMockSuggestions(messages, profile),
+      mode: "mock" as const,
+    };
+  }
+
+  const completion = await groq.chat.completions.create({
+    model: "llama-3.1-8b-instant",
+    temperature: 0.5,
+    messages: [
+      { role: "system", content: SUGGESTIONS_SYSTEM_PROMPT },
+      {
+        role: "user",
+        content: buildSuggestionsUserMessage(messages, profileSummary),
+      },
+    ],
+  });
+
+  const raw = completion.choices[0]?.message?.content ?? "";
+  const parsed = parseSuggestionsJson(raw);
+  const suggestions = fillSuggestions(parsed ?? [], DEFAULT_SUGGESTION_PROMPTS);
+
+  return { suggestions, mode: "groq" as const };
 }
 
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true });
+});
+
+app.post("/api/chat/suggestions", async (req, res) => {
+  const parsed = suggestionsRequestSchema.safeParse(req.body);
+
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid suggestions request." });
+  }
+
+  try {
+    const result = await generateSuggestions(
+      parsed.data.messages,
+      parsed.data.profile,
+    );
+    res.json(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Suggestions request failed." });
+  }
 });
 
 app.post("/api/chat", async (req, res) => {
@@ -70,37 +170,36 @@ app.post("/api/chat", async (req, res) => {
     return res.status(400).json({ error: "Invalid chat request." });
   }
 
-  const { message, profile } = parsed.data;
-  const profileSummary = buildProfileSummary(profile);
+  const { messages, profile } = parsed.data;
+  const latestUser = getLatestUserMessage(messages);
+
+  if (!latestUser) {
+    return res
+      .status(400)
+      .json({ error: "Last message must be from the user." });
+  }
+
+  const profileSummary = formatProfileForPrompt(profile);
 
   if (!groq) {
     return res.json({
-      reply: buildMockAdvice(message, profile),
-      mode: "mock"
+      reply: buildMockAdvice(latestUser.content, profile),
+      mode: "mock",
     });
   }
 
   try {
     const completion = await groq.chat.completions.create({
       model: "llama-3.1-8b-instant",
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a careful financial planning assistant for a hackathon demo. Give practical, beginner-friendly budgeting and planning guidance. Do not claim to be a licensed financial advisor. Avoid legal, tax, or investment guarantees. Keep answers specific, structured, and concise."
-        },
-        {
-          role: "user",
-          content: `User financial profile:\n${profileSummary || "No profile provided yet."}\n\nUser question:\n${message}`
-        }
-      ]
+      temperature: 0.6,
+      messages: buildCompletionMessages(messages, profileSummary),
     });
 
     res.json({
       reply:
         completion.choices[0]?.message?.content ??
         "I could not generate a response. Please try again.",
-      mode: "groq"
+      mode: "groq",
     });
   } catch (error) {
     console.error(error);

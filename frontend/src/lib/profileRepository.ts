@@ -2,6 +2,19 @@ import { emptyProfile, loadProfile, saveProfile } from "./profileStorage";
 import { supabase } from "./supabaseClient";
 import type { FinanceProfile } from "../types";
 
+function isRowLevelSecurityError(
+  error: { code?: string; message?: string } | null,
+) {
+  if (!error) {
+    return false;
+  }
+
+  return (
+    error.code === "42501" ||
+    /row-level security|permission denied/i.test(error.message ?? "")
+  );
+}
+
 type ProfileRow = {
   id: string;
   full_name: string | null;
@@ -14,6 +27,7 @@ type ProfileRow = {
   debts: string | null;
   upcoming_expenses: string | null;
   savings_goals: string | null;
+  net_worth_items: string | null;
 };
 
 function rowToProfile(row: ProfileRow | null): FinanceProfile {
@@ -31,7 +45,8 @@ function rowToProfile(row: ProfileRow | null): FinanceProfile {
     recurringExpenses: row.recurring_expenses ?? "",
     debts: row.debts ?? "",
     upcomingExpenses: row.upcoming_expenses ?? "",
-    savingsGoals: row.savings_goals ?? ""
+    savingsGoals: row.savings_goals ?? "",
+    netWorthItems: row.net_worth_items ?? "",
   };
 }
 
@@ -47,11 +62,14 @@ function profileToRow(userId: string, profile: FinanceProfile): ProfileRow {
     recurring_expenses: profile.recurringExpenses,
     debts: profile.debts,
     upcoming_expenses: profile.upcomingExpenses,
-    savings_goals: profile.savingsGoals
+    savings_goals: profile.savingsGoals,
+    net_worth_items: profile.netWorthItems,
   };
 }
 
-export async function loadUserProfile(userId?: string): Promise<FinanceProfile> {
+export async function loadUserProfile(
+  userId?: string,
+): Promise<FinanceProfile> {
   if (!supabase || !userId) {
     return loadProfile();
   }
@@ -63,21 +81,41 @@ export async function loadUserProfile(userId?: string): Promise<FinanceProfile> 
     .maybeSingle();
 
   if (error) {
-    throw error;
+    if (isRowLevelSecurityError(error)) {
+      return loadProfile();
+    }
+
+    throw new Error(`Could not load profile: ${error.message}`);
+  }
+
+  if (!data) {
+    return loadProfile();
   }
 
   return rowToProfile(data);
 }
 
-export async function saveUserProfile(userId: string | undefined, profile: FinanceProfile) {
+export async function saveUserProfile(
+  userId: string | undefined,
+  profile: FinanceProfile,
+) {
   if (!supabase || !userId) {
     saveProfile(profile);
-    return;
+    return { mode: "local" as const };
   }
 
-  const { error } = await supabase.from("profiles").upsert(profileToRow(userId, profile));
+  const { error } = await supabase
+    .from("profiles")
+    .upsert(profileToRow(userId, profile), { onConflict: "id" });
 
   if (error) {
-    throw error;
+    if (isRowLevelSecurityError(error)) {
+      saveProfile(profile);
+      return { mode: "local" as const };
+    }
+
+    throw new Error(`Could not save profile: ${error.message}`);
   }
+
+  return { mode: "supabase" as const };
 }
