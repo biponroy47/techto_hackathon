@@ -511,6 +511,14 @@ textarea:focus {
   box-shadow: 0 0 0 3px rgba(47, 125, 87, 0.15);
 }
 
+input.field-control-error,
+select.field-control-error,
+textarea.field-control-error,
+.money-input.field-control-error {
+  border-color: #c2410c;
+  box-shadow: 0 0 0 3px rgba(194, 65, 12, 0.14);
+}
+
 .field-row {
   display: grid;
   gap: 14px;
@@ -569,6 +577,11 @@ textarea:focus {
   padding: 16px;
 }
 
+.list-editor-error {
+  border-color: #c2410c;
+  box-shadow: 0 0 0 3px rgba(194, 65, 12, 0.1);
+}
+
 .list-header {
   align-items: flex-start;
   display: flex;
@@ -602,6 +615,11 @@ textarea:focus {
   display: grid;
   gap: 10px;
   padding: 12px;
+}
+
+.list-item-error {
+  background: #fff7ed;
+  border-color: #fb923c;
 }
 
 .recurring-grid,

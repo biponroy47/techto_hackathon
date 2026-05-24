@@ -357,13 +357,15 @@ export default function OnboardingPage() {
         </div>
       </div>
 
-      <form className="onboarding-form" onSubmit={handleSubmit}>
+      <form className="onboarding-form" noValidate onSubmit={handleSubmit}>
         {isLoading && <p className="status-message">Loading your profile...</p>}
         {error && <p className="error-message">{error}</p>}
 
         <label className="field">
           <span>Name</span>
           <input
+            className={validationErrors.fullName ? "field-control-error" : ""}
+            aria-invalid={Boolean(validationErrors.fullName)}
             value={profile.fullName}
             placeholder="Bipon Roy"
             onChange={(event) => updateField("fullName", event.target.value)}
@@ -373,7 +375,12 @@ export default function OnboardingPage() {
 
         <label className="field">
           <span>Occupation</span>
-          <select value={profile.occupation} onChange={(event) => updateField("occupation", event.target.value)}>
+          <select
+            className={validationErrors.occupation ? "field-control-error" : ""}
+            aria-invalid={Boolean(validationErrors.occupation)}
+            value={profile.occupation}
+            onChange={(event) => updateField("occupation", event.target.value)}
+          >
             <option value="">Select occupation</option>
             {occupationOptions.map((option) => (
               <option key={option} value={option}>
@@ -386,7 +393,12 @@ export default function OnboardingPage() {
 
         <label className="field">
           <span>Current situation</span>
-          <select value={profile.status} onChange={(event) => updateField("status", event.target.value)}>
+          <select
+            className={validationErrors.status ? "field-control-error" : ""}
+            aria-invalid={Boolean(validationErrors.status)}
+            value={profile.status}
+            onChange={(event) => updateField("status", event.target.value)}
+          >
             <option value="">Select current situation</option>
             {statusOptions.map((option) => (
               <option key={option} value={option}>
@@ -400,11 +412,11 @@ export default function OnboardingPage() {
         <div className="field-row">
           <label className="field">
             <span>Monthly income</span>
-            <div className="money-input">
+            <div className={`money-input ${validationErrors.monthlyIncome ? "field-control-error" : ""}`}>
               <span>$</span>
               <input
+                aria-invalid={Boolean(validationErrors.monthlyIncome)}
                 inputMode="decimal"
-                pattern="\\d+(\\.\\d{1,2})?"
                 value={profile.monthlyIncome}
                 placeholder="2400.00"
                 onChange={(event) => updateField("monthlyIncome", cleanMoneyInput(event.target.value))}
@@ -415,11 +427,11 @@ export default function OnboardingPage() {
 
           <label className="field">
             <span>Rent or housing cost</span>
-            <div className="money-input">
+            <div className={`money-input ${validationErrors.housingCost ? "field-control-error" : ""}`}>
               <span>$</span>
               <input
+                aria-invalid={Boolean(validationErrors.housingCost)}
                 inputMode="decimal"
-                pattern="\\d+(\\.\\d{1,2})?"
                 value={profile.housingCost}
                 placeholder="950.00"
                 onChange={(event) => updateField("housingCost", cleanMoneyInput(event.target.value))}
@@ -529,44 +541,67 @@ function RecurringListEditor({
   onChange: (id: string, patch: Partial<RecurringItem>) => void;
 }) {
   return (
-    <section className="list-editor">
+    <section className={`list-editor ${error ? "list-editor-error" : ""}`}>
       <ListHeader title={title} description={description} onAdd={onAdd} />
       {items.length === 0 && <p className="empty-list">No items added yet.</p>}
-      {items.map((item) => (
-        <div key={item.id} className="list-item-grid recurring-grid">
-          <label className="field compact-field">
-            <span>Name</span>
-            <input value={item.name} placeholder="Netflix" onChange={(event) => onChange(item.id, { name: event.target.value })} />
-          </label>
-          <label className="field compact-field">
-            <span>Cost</span>
-            <div className="money-input">
-              <span>$</span>
+      {items.map((item) => {
+        const itemHasError =
+          Boolean(error) &&
+          !isBlankRecurringItem(item) &&
+          !(item.name.trim() && validateCurrency(item.cost) && item.recurringDate.trim());
+
+        return (
+          <div
+            key={item.id}
+            className={`list-item-grid recurring-grid ${itemHasError ? "list-item-error" : ""}`}
+          >
+            <label className="field compact-field">
+              <span>Name</span>
               <input
-                inputMode="decimal"
-                value={item.cost}
-                placeholder="18.99"
-                onChange={(event) => onChange(item.id, { cost: cleanMoneyInput(event.target.value) })}
+                className={itemHasError && !item.name.trim() ? "field-control-error" : ""}
+                aria-invalid={itemHasError && !item.name.trim()}
+                value={item.name}
+                placeholder="Netflix"
+                onChange={(event) => onChange(item.id, { name: event.target.value })}
               />
-            </div>
-          </label>
-          <label className="field compact-field">
-            <span>Basis</span>
-            <select value={item.basis} onChange={(event) => onChange(item.id, { basis: event.target.value as BillingCycle })}>
-              {billingCycleOptions.map((option) => (
-                <option key={option} value={option}>
-                  {capitalize(option)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="field compact-field">
-            <span>Recurring date</span>
-            <input type="date" value={item.recurringDate} onChange={(event) => onChange(item.id, { recurringDate: event.target.value })} />
-          </label>
-          <RemoveButton onClick={() => onRemove(item.id)} />
-        </div>
-      ))}
+            </label>
+            <label className="field compact-field">
+              <span>Cost</span>
+              <div className={`money-input ${itemHasError && !validateCurrency(item.cost) ? "field-control-error" : ""}`}>
+                <span>$</span>
+                <input
+                  aria-invalid={itemHasError && !validateCurrency(item.cost)}
+                  inputMode="decimal"
+                  value={item.cost}
+                  placeholder="18.99"
+                  onChange={(event) => onChange(item.id, { cost: cleanMoneyInput(event.target.value) })}
+                />
+              </div>
+            </label>
+            <label className="field compact-field">
+              <span>Basis</span>
+              <select value={item.basis} onChange={(event) => onChange(item.id, { basis: event.target.value as BillingCycle })}>
+                {billingCycleOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {capitalize(option)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="field compact-field">
+              <span>Recurring date</span>
+              <input
+                className={itemHasError && !item.recurringDate.trim() ? "field-control-error" : ""}
+                aria-invalid={itemHasError && !item.recurringDate.trim()}
+                type="date"
+                value={item.recurringDate}
+                onChange={(event) => onChange(item.id, { recurringDate: event.target.value })}
+              />
+            </label>
+            <RemoveButton onClick={() => onRemove(item.id)} />
+          </div>
+        );
+      })}
       <FieldError message={error} />
     </section>
   );
@@ -586,52 +621,67 @@ function DebtListEditor({
   onChange: (id: string, patch: Partial<DebtItem>) => void;
 }) {
   return (
-    <section className="list-editor">
+    <section className={`list-editor ${error ? "list-editor-error" : ""}`}>
       <ListHeader title="Debts" description="Loans, credit cards, and balances you are paying down." onAdd={onAdd} />
       {items.length === 0 && <p className="empty-list">No debts added yet.</p>}
-      {items.map((item) => (
-        <div key={item.id} className="list-item-grid debt-grid">
-          <label className="field compact-field">
-            <span>Name</span>
-            <input value={item.name} placeholder="Visa card" onChange={(event) => onChange(item.id, { name: event.target.value })} />
-          </label>
-          <label className="field compact-field">
-            <span>Debt amount</span>
-            <div className="money-input">
-              <span>$</span>
+      {items.map((item) => {
+        const itemHasError =
+          Boolean(error) &&
+          !isBlankDebtItem(item) &&
+          !(item.name.trim() && validateCurrency(item.amount) && (!item.interestRate || percentPattern.test(item.interestRate)));
+
+        return (
+          <div key={item.id} className={`list-item-grid debt-grid ${itemHasError ? "list-item-error" : ""}`}>
+            <label className="field compact-field">
+              <span>Name</span>
               <input
-                inputMode="decimal"
-                value={item.amount}
-                placeholder="1200.00"
-                onChange={(event) => onChange(item.id, { amount: cleanMoneyInput(event.target.value) })}
+                className={itemHasError && !item.name.trim() ? "field-control-error" : ""}
+                aria-invalid={itemHasError && !item.name.trim()}
+                value={item.name}
+                placeholder="Visa card"
+                onChange={(event) => onChange(item.id, { name: event.target.value })}
               />
-            </div>
-          </label>
-          <label className="field compact-field">
-            <span>Type</span>
-            <select value={item.type} onChange={(event) => onChange(item.id, { type: event.target.value })}>
-              {debtTypes.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="field compact-field">
-            <span>Interest rate</span>
-            <div className="money-input percent-input">
-              <input
-                inputMode="decimal"
-                value={item.interestRate}
-                placeholder="19.99"
-                onChange={(event) => onChange(item.id, { interestRate: cleanMoneyInput(event.target.value) })}
-              />
-              <span>%</span>
-            </div>
-          </label>
-          <RemoveButton onClick={() => onRemove(item.id)} />
-        </div>
-      ))}
+            </label>
+            <label className="field compact-field">
+              <span>Debt amount</span>
+              <div className={`money-input ${itemHasError && !validateCurrency(item.amount) ? "field-control-error" : ""}`}>
+                <span>$</span>
+                <input
+                  aria-invalid={itemHasError && !validateCurrency(item.amount)}
+                  inputMode="decimal"
+                  value={item.amount}
+                  placeholder="1200.00"
+                  onChange={(event) => onChange(item.id, { amount: cleanMoneyInput(event.target.value) })}
+                />
+              </div>
+            </label>
+            <label className="field compact-field">
+              <span>Type</span>
+              <select value={item.type} onChange={(event) => onChange(item.id, { type: event.target.value })}>
+                {debtTypes.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="field compact-field">
+              <span>Interest rate</span>
+              <div className={`money-input percent-input ${itemHasError && item.interestRate && !percentPattern.test(item.interestRate) ? "field-control-error" : ""}`}>
+                <input
+                  aria-invalid={itemHasError && Boolean(item.interestRate) && !percentPattern.test(item.interestRate)}
+                  inputMode="decimal"
+                  value={item.interestRate}
+                  placeholder="19.99"
+                  onChange={(event) => onChange(item.id, { interestRate: cleanMoneyInput(event.target.value) })}
+                />
+                <span>%</span>
+              </div>
+            </label>
+            <RemoveButton onClick={() => onRemove(item.id)} />
+          </div>
+        );
+      })}
       <FieldError message={error} />
     </section>
   );
@@ -651,39 +701,64 @@ function UpcomingExpensesEditor({
   onChange: (id: string, patch: Partial<UpcomingExpenseItem>) => void;
 }) {
   return (
-    <section className="list-editor">
+    <section className={`list-editor ${error ? "list-editor-error" : ""}`}>
       <ListHeader title="Upcoming expenses" description="Future costs FiHo should plan around." onAdd={onAdd} />
       {items.length === 0 && <p className="empty-list">No upcoming expenses added yet.</p>}
-      {items.map((item) => (
-        <div key={item.id} className="list-item-grid upcoming-grid">
-          <label className="field compact-field">
-            <span>Name</span>
-            <input value={item.name} placeholder="Summer trip" onChange={(event) => onChange(item.id, { name: event.target.value })} />
-          </label>
-          <label className="field compact-field">
-            <span>Cost</span>
-            <div className="money-input">
-              <span>$</span>
-              <input inputMode="decimal" value={item.cost} placeholder="1200.00" onChange={(event) => onChange(item.id, { cost: cleanMoneyInput(event.target.value) })} />
-            </div>
-          </label>
-          <label className="field compact-field">
-            <span>Date</span>
-            <input type="date" value={item.date} onChange={(event) => onChange(item.id, { date: event.target.value })} />
-          </label>
-          <label className="field compact-field">
-            <span>Type</span>
-            <select value={item.type} onChange={(event) => onChange(item.id, { type: event.target.value })}>
-              {expenseTypes.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
-          </label>
-          <RemoveButton onClick={() => onRemove(item.id)} />
-        </div>
-      ))}
+      {items.map((item) => {
+        const itemHasError =
+          Boolean(error) &&
+          !isBlankUpcomingExpenseItem(item) &&
+          !(item.name.trim() && validateCurrency(item.cost) && item.date.trim());
+
+        return (
+          <div key={item.id} className={`list-item-grid upcoming-grid ${itemHasError ? "list-item-error" : ""}`}>
+            <label className="field compact-field">
+              <span>Name</span>
+              <input
+                className={itemHasError && !item.name.trim() ? "field-control-error" : ""}
+                aria-invalid={itemHasError && !item.name.trim()}
+                value={item.name}
+                placeholder="Summer trip"
+                onChange={(event) => onChange(item.id, { name: event.target.value })}
+              />
+            </label>
+            <label className="field compact-field">
+              <span>Cost</span>
+              <div className={`money-input ${itemHasError && !validateCurrency(item.cost) ? "field-control-error" : ""}`}>
+                <span>$</span>
+                <input
+                  aria-invalid={itemHasError && !validateCurrency(item.cost)}
+                  inputMode="decimal"
+                  value={item.cost}
+                  placeholder="1200.00"
+                  onChange={(event) => onChange(item.id, { cost: cleanMoneyInput(event.target.value) })}
+                />
+              </div>
+            </label>
+            <label className="field compact-field">
+              <span>Date</span>
+              <input
+                className={itemHasError && !item.date.trim() ? "field-control-error" : ""}
+                aria-invalid={itemHasError && !item.date.trim()}
+                type="date"
+                value={item.date}
+                onChange={(event) => onChange(item.id, { date: event.target.value })}
+              />
+            </label>
+            <label className="field compact-field">
+              <span>Type</span>
+              <select value={item.type} onChange={(event) => onChange(item.id, { type: event.target.value })}>
+                {expenseTypes.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <RemoveButton onClick={() => onRemove(item.id)} />
+          </div>
+        );
+      })}
       <FieldError message={error} />
     </section>
   );
@@ -703,39 +778,58 @@ function SavingsGoalsEditor({
   onChange: (id: string, patch: Partial<SavingsGoalItem>) => void;
 }) {
   return (
-    <section className="list-editor">
+    <section className={`list-editor ${error ? "list-editor-error" : ""}`}>
       <ListHeader title="Savings goals" description="Goals with target amounts and optional timing." onAdd={onAdd} />
       {items.length === 0 && <p className="empty-list">No savings goals added yet.</p>}
-      {items.map((item) => (
-        <div key={item.id} className="list-item-grid savings-grid">
-          <label className="field compact-field">
-            <span>Name</span>
-            <input value={item.name} placeholder="Emergency fund" onChange={(event) => onChange(item.id, { name: event.target.value })} />
-          </label>
-          <label className="field compact-field">
-            <span>Amount</span>
-            <div className="money-input">
-              <span>$</span>
-              <input inputMode="decimal" value={item.amount} placeholder="5000.00" onChange={(event) => onChange(item.id, { amount: cleanMoneyInput(event.target.value) })} />
-            </div>
-          </label>
-          <label className="field compact-field">
-            <span>Type</span>
-            <select value={item.type} onChange={(event) => onChange(item.id, { type: event.target.value })}>
-              {savingsGoalTypes.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="field compact-field">
-            <span>Target date, age, or year</span>
-            <input value={item.target} placeholder="2027, age 30, or Dec 2026" onChange={(event) => onChange(item.id, { target: event.target.value })} />
-          </label>
-          <RemoveButton onClick={() => onRemove(item.id)} />
-        </div>
-      ))}
+      {items.map((item) => {
+        const itemHasError =
+          Boolean(error) &&
+          !isBlankSavingsGoalItem(item) &&
+          !(item.name.trim() && validateCurrency(item.amount));
+
+        return (
+          <div key={item.id} className={`list-item-grid savings-grid ${itemHasError ? "list-item-error" : ""}`}>
+            <label className="field compact-field">
+              <span>Name</span>
+              <input
+                className={itemHasError && !item.name.trim() ? "field-control-error" : ""}
+                aria-invalid={itemHasError && !item.name.trim()}
+                value={item.name}
+                placeholder="Emergency fund"
+                onChange={(event) => onChange(item.id, { name: event.target.value })}
+              />
+            </label>
+            <label className="field compact-field">
+              <span>Amount</span>
+              <div className={`money-input ${itemHasError && !validateCurrency(item.amount) ? "field-control-error" : ""}`}>
+                <span>$</span>
+                <input
+                  aria-invalid={itemHasError && !validateCurrency(item.amount)}
+                  inputMode="decimal"
+                  value={item.amount}
+                  placeholder="5000.00"
+                  onChange={(event) => onChange(item.id, { amount: cleanMoneyInput(event.target.value) })}
+                />
+              </div>
+            </label>
+            <label className="field compact-field">
+              <span>Type</span>
+              <select value={item.type} onChange={(event) => onChange(item.id, { type: event.target.value })}>
+                {savingsGoalTypes.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="field compact-field">
+              <span>Target date, age, or year</span>
+              <input value={item.target} placeholder="2027, age 30, or Dec 2026" onChange={(event) => onChange(item.id, { target: event.target.value })} />
+            </label>
+            <RemoveButton onClick={() => onRemove(item.id)} />
+          </div>
+        );
+      })}
       <FieldError message={error} />
     </section>
   );
@@ -768,7 +862,7 @@ function FieldError({ message }: { message?: string }) {
     return null;
   }
 
-  return <span className="field-error">{message}</span>;
+  return <span className="field-error">Warning: {message}</span>;
 }
 
 function updateById<T extends { id: string }>(items: T[], id: string, patch: Partial<T>) {
