@@ -187,15 +187,6 @@ export default function ChatPage() {
     };
 
     await persistProfile(nextProfile, previousProfile, setIsSavingUpcoming);
-
-    setMessages((current) => [
-      ...current,
-      { role: "user", content: `I added an upcoming expense: ${line}` },
-      {
-        role: "assistant",
-        content: `Added **${line}** to your Upcoming list. Use **Plan for this** on that item when you want help budgeting for it.`
-      }
-    ]);
     closeUpcomingModal();
   }
 
@@ -212,15 +203,6 @@ export default function ChatPage() {
     };
 
     await persistProfile(nextProfile, previousProfile, setIsSavingUpcoming);
-
-    setMessages((current) => [
-      ...current,
-      { role: "user", content: `I updated an upcoming expense to: ${newLine}` },
-      {
-        role: "assistant",
-        content: `Updated your Upcoming list: **${newLine}** (was "${oldLine}").`
-      }
-    ]);
     closeUpcomingModal();
   }
 
@@ -237,15 +219,6 @@ export default function ChatPage() {
     };
 
     await persistProfile(nextProfile, previousProfile, setIsSavingGoal);
-
-    setMessages((current) => [
-      ...current,
-      { role: "user", content: `I added a savings goal: ${line}` },
-      {
-        role: "assistant",
-        content: `Added **${line}** to your Goals list. Use **Plan for this** on that item when you want help reaching it.`
-      }
-    ]);
     closeGoalModal();
   }
 
@@ -262,15 +235,6 @@ export default function ChatPage() {
     };
 
     await persistProfile(nextProfile, previousProfile, setIsSavingGoal);
-
-    setMessages((current) => [
-      ...current,
-      { role: "user", content: `I updated a savings goal to: ${newLine}` },
-      {
-        role: "assistant",
-        content: `Updated your Goals list: **${newLine}** (was "${oldLine}").`
-      }
-    ]);
     closeGoalModal();
   }
 
@@ -347,37 +311,6 @@ export default function ChatPage() {
         </div>
 
         {error && <p className="error-message">{error}</p>}
-
-        <div className="chat-side-panels-inline">
-          <SavingsGoalsPanel
-            raw={profile.savingsGoals}
-            onAsk={sendMessage}
-            onOpenAdd={() => {
-              setEditingGoalLine(null);
-              setIsAddGoalOpen(true);
-            }}
-            onEdit={(line) => {
-              setEditingGoalLine(line);
-              setIsAddGoalOpen(true);
-            }}
-            isLoading={isSidePanelBusy}
-            className="goals-panel--inline"
-          />
-          <UpcomingExpensesPanel
-            raw={profile.upcomingExpenses}
-            onAsk={sendMessage}
-            onOpenAdd={() => {
-              setEditingUpcomingLine(null);
-              setIsAddUpcomingOpen(true);
-            }}
-            onEdit={(line) => {
-              setEditingUpcomingLine(line);
-              setIsAddUpcomingOpen(true);
-            }}
-            isLoading={isSidePanelBusy}
-            className="upcoming-panel--inline"
-          />
-        </div>
 
         <form className="chat-input" onSubmit={handleSubmit}>
           <input
