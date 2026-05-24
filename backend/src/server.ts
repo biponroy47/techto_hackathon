@@ -10,8 +10,12 @@ const app = express();
 const port = Number(process.env.PORT ?? 8787);
 const frontendOrigin = process.env.FRONTEND_ORIGIN ?? "http://localhost:5173";
 
-const openai = process.env.OPENAI_API_KEY
-  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+const openaiApiKey = process.env.OPENAI_API_KEY?.trim();
+const hasRealOpenAiKey =
+  openaiApiKey && !["replace-me", "your-api-key-here"].includes(openaiApiKey);
+
+const openai = hasRealOpenAiKey
+  ? new OpenAI({ apiKey: openaiApiKey })
   : null;
 
 app.use(cors({ origin: frontendOrigin }));
