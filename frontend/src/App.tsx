@@ -1,10 +1,12 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { BadgeDollarSign, LogOut } from "lucide-react";
 import { useAuth } from "./hooks/useAuth";
 import { isSupabaseConfigured } from "./lib/supabaseClient";
 
 export default function App() {
   const { fullName, user, signOut } = useAuth();
+  const location = useLocation();
+  const isLandingPage = location.pathname === "/";
 
   return (
     <div className="app-shell">
@@ -17,8 +19,8 @@ export default function App() {
           <NavLink to="/" end>
             Home
           </NavLink>
-          <NavLink to="/onboarding">Onboarding</NavLink>
-          <NavLink to="/chat">Chat</NavLink>
+          {!isLandingPage && <NavLink to="/onboarding">Onboarding</NavLink>}
+          {!isLandingPage && <NavLink to="/chat">Chat</NavLink>}
           {isSupabaseConfigured && !user && <NavLink to="/auth">Log in</NavLink>}
         </nav>
         {isSupabaseConfigured && user && (
