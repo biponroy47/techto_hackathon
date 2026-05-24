@@ -27,6 +27,7 @@ type ProfileRow = {
   debts: string | null;
   upcoming_expenses: string | null;
   savings_goals: string | null;
+  net_worth_items: string | null;
 };
 
 function rowToProfile(row: ProfileRow | null): FinanceProfile {
@@ -45,6 +46,7 @@ function rowToProfile(row: ProfileRow | null): FinanceProfile {
     debts: row.debts ?? "",
     upcomingExpenses: row.upcoming_expenses ?? "",
     savingsGoals: row.savings_goals ?? "",
+    netWorthItems: row.net_worth_items ?? "",
   };
 }
 
@@ -61,6 +63,7 @@ function profileToRow(userId: string, profile: FinanceProfile): ProfileRow {
     debts: profile.debts,
     upcoming_expenses: profile.upcomingExpenses,
     savings_goals: profile.savingsGoals,
+    net_worth_items: profile.netWorthItems,
   };
 }
 

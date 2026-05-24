@@ -2,7 +2,12 @@
   color: #111827;
   background: #ffffff;
   font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
     sans-serif;
   line-height: 1.5;
 }
@@ -29,8 +34,7 @@ button {
 }
 
 .app-shell {
-  background:
-    linear-gradient(180deg, #ffffff 0%, #f8fbfa 48%, #ffffff 100%);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbfa 48%, #ffffff 100%);
   min-height: 100vh;
 }
 
@@ -396,9 +400,13 @@ main {
 
 .chat-layout {
   display: grid;
-  grid-template-columns: minmax(200px, 0.65fr) minmax(280px, 1.15fr) minmax(220px, 0.55fr);
+  grid-template-columns: minmax(200px, 0.65fr) minmax(280px, 1.15fr) minmax(
+      220px,
+      0.55fr
+    );
   gap: clamp(20px, 3vw, 40px);
-  align-items: start;
+  align-items: stretch;
+  height: calc(100vh - 220px);
 }
 
 .intro-panel,
@@ -409,8 +417,376 @@ main {
 }
 
 .chat-right-rail {
+  align-content: start;
   display: grid;
   gap: 16px;
+  height: 100%;
+  overflow-y: auto;
+
+  .dashboard-left-rail {
+    align-content: start;
+    display: grid;
+    gap: 16px;
+    height: 100%;
+    overflow-y: auto;
+  }
+
+  /* Net worth panel */
+  .nw-list {
+    display: grid;
+    gap: 8px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .nw-item {
+    align-items: center;
+    background: #f8faf8;
+    border: 1px solid #e3ded3;
+    border-radius: 8px;
+    display: flex;
+    gap: 8px;
+    justify-content: space-between;
+    padding: 8px 10px;
+  }
+
+  .nw-item-info {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  .nw-item-name {
+    color: #16231c;
+    font-size: 0.88rem;
+    font-weight: 800;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .nw-type-badge {
+    background: #edf4ea;
+    border: 1px solid #d4e6d8;
+    border-radius: 999px;
+    color: #1f4c37;
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 7px;
+  }
+
+  .nw-item-actions {
+    align-items: center;
+    display: flex;
+    flex-shrink: 0;
+    gap: 5px;
+  }
+
+  .nw-item-amount {
+    color: #16231c;
+    font-size: 0.88rem;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .nw-edit-btn,
+  .nw-delete-btn {
+    align-items: center;
+    border: 0;
+    border-radius: 6px;
+    cursor: pointer;
+    display: inline-flex;
+    justify-content: center;
+    min-height: 28px;
+    min-width: 28px;
+    padding: 4px;
+  }
+
+  .nw-edit-btn {
+    background: #eef8f1;
+    color: #1f4c37;
+  }
+
+  .nw-delete-btn {
+    background: #fde8df;
+    color: #8c2b0f;
+  }
+
+  .nw-edit-btn:disabled,
+  .nw-delete-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  /* Upcoming compact list */
+  .upcoming-compact-list {
+    display: grid;
+    gap: 8px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .upcoming-compact-item {
+    background: #f8faf8;
+    border: 1px solid #e3ded3;
+    border-radius: 8px;
+    display: grid;
+    gap: 4px;
+    padding: 8px 10px;
+  }
+
+  .upcoming-compact-name {
+    color: #16231c;
+    font-size: 0.88rem;
+    font-weight: 800;
+  }
+
+  .upcoming-compact-row {
+    align-items: center;
+    display: flex;
+    gap: 8px;
+    justify-content: space-between;
+  }
+
+  .upcoming-compact-date {
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-radius: 999px;
+    color: #92400e;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 7px;
+  }
+
+  .upcoming-compact-amount {
+    color: #475569;
+    font-size: 0.82rem;
+    font-weight: 700;
+  }
+
+  /* Monthly summary panel */
+  .monthly-summary {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+  }
+
+  .monthly-row {
+    align-items: center;
+    background: #f8faf8;
+    border: 1px solid #e3ded3;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 10px;
+  }
+
+  .monthly-row dt {
+    color: #647165;
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .monthly-row dd {
+    font-size: 0.9rem;
+    font-weight: 800;
+    margin: 0;
+  }
+
+  .monthly-row--highlight {
+    background: #eef8f1;
+    border-color: #b8d6c3;
+  }
+
+  .monthly-positive {
+    color: #1f4c37;
+  }
+
+  .monthly-negative {
+    color: #8c2b0f;
+  }
+}
+
+.side-panel {
+  background: #fffdf8;
+  border: 1px solid #d8d0c2;
+  border-radius: 8px;
+  box-shadow: 0 18px 50px rgba(45, 36, 22, 0.08);
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.side-panel-header {
+  align-items: flex-start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.side-panel-title {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+}
+
+.side-panel-title h2 {
+  font-size: 1.02rem;
+  margin: 0;
+}
+
+.side-panel-title svg {
+  color: #1f7a4d;
+}
+
+.side-panel-add-button {
+  align-items: center;
+  display: inline-flex;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 12px;
+}
+
+.side-panel-empty {
+  display: grid;
+  gap: 12px;
+}
+
+.side-panel-empty p,
+.side-panel-footnote {
+  color: #4c594f;
+  margin: 0;
+}
+
+.side-panel-list {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.side-panel-item {
+  background: #f8faf8;
+  border: 1px solid #e3ded3;
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.side-panel-item-main {
+  display: grid;
+  gap: 6px;
+}
+
+.side-panel-item-label {
+  color: #16231c;
+  font-weight: 800;
+}
+
+.goals-badge,
+.upcoming-badge {
+  align-self: start;
+  background: #edf4ea;
+  border: 1px solid #d4e6d8;
+  border-radius: 999px;
+  color: #1f4c37;
+  display: inline-flex;
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 4px 10px;
+}
+
+.side-panel-item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.side-panel-edit-button,
+.side-panel-plan-button {
+  align-items: center;
+  border: 0;
+  border-radius: 8px;
+  display: inline-flex;
+  font-weight: 800;
+  gap: 6px;
+  min-height: 40px;
+  padding: 8px 12px;
+}
+
+.side-panel-edit-button {
+  background: #eef8f1;
+  color: #1f4c37;
+}
+
+.side-panel-plan-button {
+  background: #24583f;
+  color: #ffffff;
+}
+
+.side-panel-add-button--empty {
+  justify-content: center;
+  width: 100%;
+}
+
+.modal-overlay {
+  align-items: center;
+  background: rgba(15, 23, 42, 0.45);
+  display: grid;
+  inset: 0;
+  justify-items: center;
+  padding: 24px;
+  position: fixed;
+  z-index: 30;
+}
+
+.modal-card {
+  background: #fffdf8;
+  border: 1px solid #d8d0c2;
+  border-radius: 12px;
+  box-shadow: 0 30px 90px rgba(15, 23, 42, 0.24);
+  display: grid;
+  gap: 18px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  padding: 20px;
+  width: min(560px, 100%);
+}
+
+.modal-header {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.modal-header h2 {
+  font-size: 1.2rem;
+  margin: 0;
+}
+
+.modal-close {
+  align-items: center;
+  background: #edf4ea;
+  border: 0;
+  border-radius: 999px;
+  color: #1f4c37;
+  display: inline-flex;
+  justify-content: center;
+  min-height: 40px;
+  min-width: 40px;
+  padding: 0;
+}
+
+.modal-form {
+  display: grid;
+  gap: 14px;
 }
 
 .eyebrow {
@@ -638,7 +1014,9 @@ textarea.field-control-error,
 .debt-grid,
 .upcoming-grid,
 .savings-grid {
-  grid-template-columns: minmax(130px, 1fr) minmax(110px, 0.8fr) minmax(130px, 0.9fr) minmax(150px, 1fr) auto;
+  grid-template-columns:
+    minmax(130px, 1fr) minmax(110px, 0.8fr) minmax(130px, 0.9fr)
+    minmax(150px, 1fr) auto;
 }
 
 .remove-button {
@@ -735,17 +1113,20 @@ dd {
 }
 
 .chat-panel {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 16px;
-  min-height: 72vh;
+  min-height: 0;
+  overflow: hidden;
   padding: clamp(16px, 3vw, 24px);
 }
 
 .messages {
   align-content: start;
   display: grid;
+  flex: 1;
   gap: 12px;
-  max-height: 54vh;
+  min-height: 0;
   overflow-y: auto;
   padding-right: 4px;
 }
@@ -1067,9 +1448,35 @@ dd {
   }
 
   .page-grid,
-  .auth-page,
+  .auth-page {
+    grid-template-columns: 1fr;
+  }
+
   .chat-layout {
     grid-template-columns: 1fr;
+    height: auto;
+
+    .dashboard-left-rail {
+      height: auto;
+      overflow-y: visible;
+    }
+  }
+
+  .chat-panel {
+    min-height: 60vh;
+  }
+
+  .messages {
+    max-height: 45vh;
+  }
+
+  .modal-overlay {
+    padding: 12px;
+  }
+
+  .modal-card {
+    max-height: calc(100vh - 24px);
+    width: 100%;
   }
 
   .field-row,

@@ -295,7 +295,7 @@ export default function OnboardingPage() {
           setError(
             loadError instanceof Error
               ? loadError.message
-              : "Could not load your saved onboarding profile.",
+              : "Could not load your saved profile.",
           );
         }
       })
@@ -664,7 +664,7 @@ export default function OnboardingPage() {
             disabled={isSaving || isLoading}
           >
             <ArrowRight aria-hidden="true" />
-            Go to chat
+            Go to Dashboard
           </button>
         </div>
       </form>

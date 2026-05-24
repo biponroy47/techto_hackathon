@@ -39,21 +39,34 @@ export const PROFILE_FIELD_LABELS: Record<string, string> = {
   recurringExpenses: "Recurring expenses",
   debts: "Debts",
   upcomingExpenses: "Upcoming expenses",
-  savingsGoals: "Savings goals"
+  savingsGoals: "Savings goals",
+  netWorthItems: "Assets / net worth",
 };
 
-export function formatProfileForPrompt(profile: Record<string, string | undefined>) {
+export function formatProfileForPrompt(
+  profile: Record<string, string | undefined>,
+) {
   return Object.entries(profile)
     .filter(([, value]) => value && value.trim().length > 0)
     .map(([key, value]) => {
-      const label = PROFILE_FIELD_LABELS[key] ?? key.replace(/([A-Z])/g, " $1").trim();
+      const label =
+        PROFILE_FIELD_LABELS[key] ?? key.replace(/([A-Z])/g, " $1").trim();
       return `- ${label}: ${formatProfileValue(key, value!.trim())}`;
     })
     .join("\n");
 }
 
 function formatProfileValue(key: string, value: string) {
-  if (!["subscriptions", "recurringExpenses", "debts", "upcomingExpenses", "savingsGoals"].includes(key)) {
+  if (
+    ![
+      "subscriptions",
+      "recurringExpenses",
+      "debts",
+      "upcomingExpenses",
+      "savingsGoals",
+      "netWorthItems",
+    ].includes(key)
+  ) {
     return value;
   }
 
@@ -83,7 +96,9 @@ function formatListItem(key: string, item: unknown) {
   }
 
   if (key === "debts") {
-    const interest = record.interestRate ? ` at ${record.interestRate}% interest` : "";
+    const interest = record.interestRate
+      ? ` at ${record.interestRate}% interest`
+      : "";
     return `${name} ${valueOrFallback(record.type, "debt")} balance $${valueOrFallback(record.amount, "0")}${interest}`;
   }
 
@@ -94,6 +109,11 @@ function formatListItem(key: string, item: unknown) {
   if (key === "savingsGoals") {
     const target = record.target ? ` by ${record.target}` : "";
     return `${name} ${valueOrFallback(record.type, "goal")} target $${valueOrFallback(record.amount, "0")}${target}`;
+  }
+
+  if (key === "netWorthItems") {
+    const amount = record.amount ? ` — $${record.amount}` : "";
+    return `${name} (${valueOrFallback(record.type, "asset")})${amount}`;
   }
 
   return name;
@@ -120,7 +140,7 @@ export const SUGGESTION_CHIP_COUNT = 2;
 
 export const DEFAULT_SUGGESTION_PROMPTS = [
   "Build my monthly budget",
-  "What should I cut first?"
+  "What should I cut first?",
 ];
 
 export const SUGGESTIONS_SYSTEM_PROMPT = `You generate follow-up question chips for a personal finance chat app.
@@ -136,10 +156,13 @@ Each string must:
 
 export function buildSuggestionsUserMessage(
   messages: Array<{ role: "user" | "assistant"; content: string }>,
-  profileSummary: string
+  profileSummary: string,
 ) {
   const transcript = messages
-    .map((message) => `${message.role === "user" ? "User" : "Assistant"}: ${message.content.trim()}`)
+    .map(
+      (message) =>
+        `${message.role === "user" ? "User" : "Assistant"}: ${message.content.trim()}`,
+    )
     .join("\n\n");
 
   return `Financial profile:
@@ -167,7 +190,10 @@ export function parseSuggestionsJson(raw: string): string[] | null {
     }
 
     const suggestions = parsed
-      .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+      .filter(
+        (item): item is string =>
+          typeof item === "string" && item.trim().length > 0,
+      )
       .map((item) => item.trim().replace(/\s+/g, " "))
       .slice(0, SUGGESTION_CHIP_COUNT);
 
@@ -179,7 +205,7 @@ export function parseSuggestionsJson(raw: string): string[] | null {
 
 export function fillSuggestions(
   suggestions: string[],
-  fallback: string[] = DEFAULT_SUGGESTION_PROMPTS
+  fallback: string[] = DEFAULT_SUGGESTION_PROMPTS,
 ): string[] {
   const result = [...suggestions];
 
@@ -198,13 +224,21 @@ export function fillSuggestions(
 
 export function buildMockSuggestions(
   messages: Array<{ role: "user" | "assistant"; content: string }>,
-  profile: Record<string, string | undefined>
+  profile: Record<string, string | undefined>,
 ): string[] {
-  const lastUser = [...messages].reverse().find((message) => message.role === "user")?.content.toLowerCase() ?? "";
+  const lastUser =
+    [...messages]
+      .reverse()
+      .find((message) => message.role === "user")
+      ?.content.toLowerCase() ?? "";
   const hasIncome = Boolean(profile.monthlyIncome?.trim());
   const hasGoals = Boolean(profile.savingsGoals?.trim());
 
-  if (lastUser.includes("trip") || lastUser.includes("travel") || lastUser.includes("vacation")) {
+  if (
+    lastUser.includes("trip") ||
+    lastUser.includes("travel") ||
+    lastUser.includes("vacation")
+  ) {
     return ["What should I cut for this trip?", "Weekly savings plan for it"];
   }
 
@@ -212,7 +246,11 @@ export function buildMockSuggestions(
     return ["Split needs vs wants?", "One expense to trim first"];
   }
 
-  if (lastUser.includes("reduce") || lastUser.includes("cut") || lastUser.includes("save")) {
+  if (
+    lastUser.includes("reduce") ||
+    lastUser.includes("cut") ||
+    lastUser.includes("save")
+  ) {
     return ["Which subscription to cancel?", "How much can I save monthly?"];
   }
 

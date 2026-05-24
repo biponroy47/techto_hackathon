@@ -9,6 +9,7 @@ export type FinanceProfile = {
   debts: string;
   upcomingExpenses: string;
   savingsGoals: string;
+  netWorthItems: string;
 };
 
 export type ChatMessage = {

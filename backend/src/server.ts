@@ -13,7 +13,7 @@ import {
   FINANCE_ASSISTANT_SYSTEM_PROMPT,
   formatProfileForPrompt,
   parseSuggestionsJson,
-  SUGGESTIONS_SYSTEM_PROMPT
+  SUGGESTIONS_SYSTEM_PROMPT,
 } from "./prompts.js";
 
 dotenv.config();
@@ -29,7 +29,7 @@ const hasRealGroqKey =
 const groq = hasRealGroqKey
   ? new OpenAI({
       apiKey: groqApiKey,
-      baseURL: "https://api.groq.com/openai/v1"
+      baseURL: "https://api.groq.com/openai/v1",
     })
   : null;
 
@@ -46,22 +46,23 @@ const profileSchema = z.object({
   recurringExpenses: z.string().optional(),
   debts: z.string().optional(),
   upcomingExpenses: z.string().optional(),
-  savingsGoals: z.string().optional()
+  savingsGoals: z.string().optional(),
+  netWorthItems: z.string().optional(),
 });
 
 const chatMessageSchema = z.object({
   role: z.enum(["user", "assistant"]),
-  content: z.string().min(1).max(4000)
+  content: z.string().min(1).max(4000),
 });
 
 const chatRequestSchema = z.object({
   messages: z.array(chatMessageSchema).min(1).max(30),
-  profile: profileSchema
+  profile: profileSchema,
 });
 
 const suggestionsRequestSchema = z.object({
   messages: z.array(chatMessageSchema).min(1).max(30),
-  profile: profileSchema
+  profile: profileSchema,
 });
 
 function getLatestUserMessage(messages: z.infer<typeof chatMessageSchema>[]) {
@@ -70,10 +71,10 @@ function getLatestUserMessage(messages: z.infer<typeof chatMessageSchema>[]) {
 
 function buildCompletionMessages(
   messages: z.infer<typeof chatMessageSchema>[],
-  profileSummary: string
+  profileSummary: string,
 ): ChatCompletionMessageParam[] {
   const completionMessages: ChatCompletionMessageParam[] = [
-    { role: "system", content: FINANCE_ASSISTANT_SYSTEM_PROMPT }
+    { role: "system", content: FINANCE_ASSISTANT_SYSTEM_PROMPT },
   ];
 
   const history = messages.slice(0, -1);
@@ -85,33 +86,38 @@ function buildCompletionMessages(
   if (latestUser) {
     completionMessages.push({
       role: "user",
-      content: buildUserChatMessage(latestUser.content, profileSummary)
+      content: buildUserChatMessage(latestUser.content, profileSummary),
     });
   }
 
   return completionMessages;
 }
 
-function buildMockAdvice(message: string, profile: z.infer<typeof profileSchema>) {
-  const income = profile.monthlyIncome ? `$${profile.monthlyIncome}/month` : "your current income";
+function buildMockAdvice(
+  message: string,
+  profile: z.infer<typeof profileSchema>,
+) {
+  const income = profile.monthlyIncome
+    ? `$${profile.monthlyIncome}/month`
+    : "your current income";
 
   return [
     `Based on ${income}, a simple starting point is a **50/30/20** split: needs, wants, and savings or debt repayment.`,
     "For personalized AI answers, add your Groq API key in backend/.env.",
-    `For your question about "${message}", list your fixed costs first, then pick **one** savings goal and **one** expense to trim this week.`
+    `For your question about "${message}", list your fixed costs first, then pick **one** savings goal and **one** expense to trim this week.`,
   ].join("\n\n");
 }
 
 async function generateSuggestions(
   messages: z.infer<typeof chatMessageSchema>[],
-  profile: z.infer<typeof profileSchema>
+  profile: z.infer<typeof profileSchema>,
 ) {
   const profileSummary = formatProfileForPrompt(profile);
 
   if (!groq) {
     return {
       suggestions: buildMockSuggestions(messages, profile),
-      mode: "mock" as const
+      mode: "mock" as const,
     };
   }
 
@@ -120,8 +126,11 @@ async function generateSuggestions(
     temperature: 0.5,
     messages: [
       { role: "system", content: SUGGESTIONS_SYSTEM_PROMPT },
-      { role: "user", content: buildSuggestionsUserMessage(messages, profileSummary) }
-    ]
+      {
+        role: "user",
+        content: buildSuggestionsUserMessage(messages, profileSummary),
+      },
+    ],
   });
 
   const raw = completion.choices[0]?.message?.content ?? "";
@@ -143,7 +152,10 @@ app.post("/api/chat/suggestions", async (req, res) => {
   }
 
   try {
-    const result = await generateSuggestions(parsed.data.messages, parsed.data.profile);
+    const result = await generateSuggestions(
+      parsed.data.messages,
+      parsed.data.profile,
+    );
     res.json(result);
   } catch (error) {
     console.error(error);
@@ -162,7 +174,9 @@ app.post("/api/chat", async (req, res) => {
   const latestUser = getLatestUserMessage(messages);
 
   if (!latestUser) {
-    return res.status(400).json({ error: "Last message must be from the user." });
+    return res
+      .status(400)
+      .json({ error: "Last message must be from the user." });
   }
 
   const profileSummary = formatProfileForPrompt(profile);
@@ -170,7 +184,7 @@ app.post("/api/chat", async (req, res) => {
   if (!groq) {
     return res.json({
       reply: buildMockAdvice(latestUser.content, profile),
-      mode: "mock"
+      mode: "mock",
     });
   }
 
@@ -178,14 +192,14 @@ app.post("/api/chat", async (req, res) => {
     const completion = await groq.chat.completions.create({
       model: "llama-3.1-8b-instant",
       temperature: 0.6,
-      messages: buildCompletionMessages(messages, profileSummary)
+      messages: buildCompletionMessages(messages, profileSummary),
     });
 
     res.json({
       reply:
         completion.choices[0]?.message?.content ??
         "I could not generate a response. Please try again.",
-      mode: "groq"
+      mode: "groq",
     });
   } catch (error) {
     console.error(error);

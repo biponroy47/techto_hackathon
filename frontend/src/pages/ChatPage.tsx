@@ -1,6 +1,25 @@
-import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  FormEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Link } from "react-router-dom";
-import { Send, Sparkles } from "lucide-react";
+import {
+  BarChart3,
+  CalendarDays,
+  Pencil,
+  Plus,
+  Send,
+  Sparkles,
+  TrendingUp,
+  Trash2,
+} from "lucide-react";
+import AddNetWorthItemModal, {
+  type NetWorthItem,
+} from "../components/AddNetWorthItemModal";
 import AddSavingsGoalModal from "../components/AddSavingsGoalModal";
 import AddUpcomingExpenseModal from "../components/AddUpcomingExpenseModal";
 import ChatMessageContent from "../components/ChatMessageContent";
@@ -10,14 +29,18 @@ import { useAuth } from "../hooks/useAuth";
 import {
   DEFAULT_SUGGESTION_PROMPTS,
   fetchChatSuggestions,
-  sendChatMessage
+  sendChatMessage,
 } from "../lib/chatApi";
 import { loadUserProfile, saveUserProfile } from "../lib/profileRepository";
 import { emptyProfile } from "../lib/profileStorage";
-import { appendSavingsGoal, replaceProfileLine as replaceSavingsGoalLine } from "../lib/savingsGoals";
+import {
+  appendSavingsGoal,
+  replaceProfileLine as replaceSavingsGoalLine,
+} from "../lib/savingsGoals";
 import {
   appendUpcomingExpense,
-  replaceProfileLine as replaceUpcomingLine
+  parseUpcomingExpenses,
+  replaceProfileLine as replaceUpcomingLine,
 } from "../lib/upcomingExpenses";
 import type { ChatMessage, FinanceProfile } from "../types";
 
@@ -28,9 +51,11 @@ export default function ChatPage() {
   const { user, fullName } = useAuth();
   const [profile, setProfile] = useState<FinanceProfile>(emptyProfile);
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: "assistant", content: initialAssistantMessage }
+    { role: "assistant", content: initialAssistantMessage },
   ]);
-  const [suggestedPrompts, setSuggestedPrompts] = useState(DEFAULT_SUGGESTION_PROMPTS);
+  const [suggestedPrompts, setSuggestedPrompts] = useState(
+    DEFAULT_SUGGESTION_PROMPTS,
+  );
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSuggestionsLoading, setIsSuggestionsLoading] = useState(false);
@@ -38,10 +63,17 @@ export default function ChatPage() {
   const [error, setError] = useState("");
   const [isAddUpcomingOpen, setIsAddUpcomingOpen] = useState(false);
   const [isAddGoalOpen, setIsAddGoalOpen] = useState(false);
-  const [editingUpcomingLine, setEditingUpcomingLine] = useState<string | null>(null);
+  const [editingUpcomingLine, setEditingUpcomingLine] = useState<string | null>(
+    null,
+  );
   const [editingGoalLine, setEditingGoalLine] = useState<string | null>(null);
   const [isSavingUpcoming, setIsSavingUpcoming] = useState(false);
   const [isSavingGoal, setIsSavingGoal] = useState(false);
+  const [netWorthItems, setNetWorthItems] = useState<NetWorthItem[]>([]);
+  const [isAddNetWorthOpen, setIsAddNetWorthOpen] = useState(false);
+  const [editingNetWorthItem, setEditingNetWorthItem] =
+    useState<NetWorthItem | null>(null);
+  const [isSavingNetWorth, setIsSavingNetWorth] = useState(false);
   const suggestionsRequestId = useRef(0);
 
   useEffect(() => {
@@ -55,8 +87,18 @@ export default function ChatPage() {
 
         setProfile({
           ...savedProfile,
-          fullName: savedProfile.fullName || fullName
+          fullName: savedProfile.fullName || fullName,
         });
+
+        try {
+          setNetWorthItems(
+            savedProfile.netWorthItems
+              ? (JSON.parse(savedProfile.netWorthItems) as NetWorthItem[])
+              : [],
+          );
+        } catch {
+          setNetWorthItems([]);
+        }
       })
       .catch(() => {
         if (isMounted) {
@@ -97,7 +139,7 @@ export default function ChatPage() {
         }
       }
     },
-    [profile]
+    [profile],
   );
 
   useEffect(() => {
@@ -108,10 +150,60 @@ export default function ChatPage() {
     void refreshSuggestions(messages);
   }, [isProfileLoading, messages, refreshSuggestions]);
 
-  const filledFields = useMemo(
-    () => Object.values(profile).filter((value) => value.trim().length > 0).length,
-    [profile]
+  const upcomingItems = useMemo(
+    () => parseUpcomingExpenses(profile.upcomingExpenses),
+    [profile.upcomingExpenses],
   );
+
+  const totalNetWorth = useMemo(
+    () =>
+      netWorthItems.reduce(
+        (sum, item) => sum + (parseFloat(item.amount) || 0),
+        0,
+      ),
+    [netWorthItems],
+  );
+
+  const monthlySummary = useMemo(() => {
+    const income = parseFloat(profile.monthlyIncome) || 0;
+    const housing = parseFloat(profile.housingCost) || 0;
+
+    let subsTotal = 0;
+    try {
+      const subs = JSON.parse(profile.subscriptions || "[]") as Array<{
+        cost?: string;
+        basis?: string;
+      }>;
+      for (const s of subs) {
+        const cost = parseFloat(s.cost ?? "0") || 0;
+        subsTotal += s.basis === "annual" ? cost / 12 : cost;
+      }
+    } catch {
+      /* ignore */
+    }
+
+    let recurringTotal = 0;
+    try {
+      const rec = JSON.parse(profile.recurringExpenses || "[]") as Array<{
+        cost?: string;
+        basis?: string;
+      }>;
+      for (const r of rec) {
+        const cost = parseFloat(r.cost ?? "0") || 0;
+        recurringTotal += r.basis === "annual" ? cost / 12 : cost;
+      }
+    } catch {
+      /* ignore */
+    }
+
+    const expenses = housing + subsTotal + recurringTotal;
+    return { income, expenses, remaining: income - expenses };
+  }, [
+    profile.monthlyIncome,
+    profile.housingCost,
+    profile.subscriptions,
+    profile.recurringExpenses,
+  ]);
 
   async function sendMessage(message: string) {
     if (!message.trim() || isLoading) {
@@ -124,17 +216,22 @@ export default function ChatPage() {
     const previousMessages = messages;
     const nextMessages: ChatMessage[] = [
       ...previousMessages,
-      { role: "user", content: message.trim() }
+      { role: "user", content: message.trim() },
     ];
     setMessages(nextMessages);
     setIsLoading(true);
 
     try {
       const data = await sendChatMessage(nextMessages, profile);
-      setMessages((current) => [...current, { role: "assistant", content: data.reply }]);
+      setMessages((current) => [
+        ...current,
+        { role: "assistant", content: data.reply },
+      ]);
     } catch {
       setMessages(previousMessages);
-      setError("Could not reach the backend. Make sure npm run dev is running.");
+      setError(
+        "Could not reach the backend. Make sure npm run dev is running.",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -143,6 +240,54 @@ export default function ChatPage() {
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
     void sendMessage(input);
+  }
+
+  function closeNetWorthModal() {
+    setIsAddNetWorthOpen(false);
+    setEditingNetWorthItem(null);
+  }
+
+  async function handleSaveNetWorthItem(item: Omit<NetWorthItem, "id">) {
+    const id =
+      editingNetWorthItem?.id ??
+      (typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(16).slice(2)}`);
+    const nextItems = editingNetWorthItem
+      ? netWorthItems.map((nw) => (nw.id === id ? { ...nw, ...item } : nw))
+      : [...netWorthItems, { id, ...item }];
+    const previousProfile = profile;
+    const previousItems = netWorthItems;
+    const nextProfile: FinanceProfile = {
+      ...profile,
+      netWorthItems: JSON.stringify(nextItems),
+    };
+    setNetWorthItems(nextItems);
+    try {
+      await persistProfile(nextProfile, previousProfile, setIsSavingNetWorth);
+    } catch {
+      setNetWorthItems(previousItems);
+      throw new Error("save failed");
+    }
+    closeNetWorthModal();
+  }
+
+  async function handleDeleteNetWorthItem(id: string) {
+    const nextItems = netWorthItems.filter((nw) => nw.id !== id);
+    const previousProfile = profile;
+    const previousItems = netWorthItems;
+    const nextProfile: FinanceProfile = {
+      ...profile,
+      netWorthItems: JSON.stringify(nextItems),
+    };
+    setNetWorthItems(nextItems);
+    setError("");
+    try {
+      await persistProfile(nextProfile, previousProfile, setIsSavingNetWorth);
+    } catch {
+      setNetWorthItems(previousItems);
+      setError("Could not remove this item. Try again.");
+    }
   }
 
   function closeUpcomingModal() {
@@ -158,7 +303,7 @@ export default function ChatPage() {
   async function persistProfile(
     nextProfile: FinanceProfile,
     previousProfile: FinanceProfile,
-    setSaving: (value: boolean) => void
+    setSaving: (value: boolean) => void,
   ) {
     setProfile(nextProfile);
     setSaving(true);
@@ -183,7 +328,7 @@ export default function ChatPage() {
     const previousProfile = profile;
     const nextProfile: FinanceProfile = {
       ...profile,
-      upcomingExpenses: appendUpcomingExpense(profile.upcomingExpenses, line)
+      upcomingExpenses: appendUpcomingExpense(profile.upcomingExpenses, line),
     };
 
     await persistProfile(nextProfile, previousProfile, setIsSavingUpcoming);
@@ -193,8 +338,8 @@ export default function ChatPage() {
       { role: "user", content: `I added an upcoming expense: ${line}` },
       {
         role: "assistant",
-        content: `Added **${line}** to your Upcoming list. Use **Plan for this** on that item when you want help budgeting for it.`
-      }
+        content: `Added **${line}** to your Upcoming list. Use **Plan for this** on that item when you want help budgeting for it.`,
+      },
     ]);
     closeUpcomingModal();
   }
@@ -208,7 +353,11 @@ export default function ChatPage() {
     const previousProfile = profile;
     const nextProfile: FinanceProfile = {
       ...profile,
-      upcomingExpenses: replaceUpcomingLine(profile.upcomingExpenses, oldLine, newLine)
+      upcomingExpenses: replaceUpcomingLine(
+        profile.upcomingExpenses,
+        oldLine,
+        newLine,
+      ),
     };
 
     await persistProfile(nextProfile, previousProfile, setIsSavingUpcoming);
@@ -218,8 +367,8 @@ export default function ChatPage() {
       { role: "user", content: `I updated an upcoming expense to: ${newLine}` },
       {
         role: "assistant",
-        content: `Updated your Upcoming list: **${newLine}** (was "${oldLine}").`
-      }
+        content: `Updated your Upcoming list: **${newLine}** (was "${oldLine}").`,
+      },
     ]);
     closeUpcomingModal();
   }
@@ -233,7 +382,7 @@ export default function ChatPage() {
     const previousProfile = profile;
     const nextProfile: FinanceProfile = {
       ...profile,
-      savingsGoals: appendSavingsGoal(profile.savingsGoals, line)
+      savingsGoals: appendSavingsGoal(profile.savingsGoals, line),
     };
 
     await persistProfile(nextProfile, previousProfile, setIsSavingGoal);
@@ -243,8 +392,8 @@ export default function ChatPage() {
       { role: "user", content: `I added a savings goal: ${line}` },
       {
         role: "assistant",
-        content: `Added **${line}** to your Goals list. Use **Plan for this** on that item when you want help reaching it.`
-      }
+        content: `Added **${line}** to your Goals list. Use **Plan for this** on that item when you want help reaching it.`,
+      },
     ]);
     closeGoalModal();
   }
@@ -258,7 +407,11 @@ export default function ChatPage() {
     const previousProfile = profile;
     const nextProfile: FinanceProfile = {
       ...profile,
-      savingsGoals: replaceSavingsGoalLine(profile.savingsGoals, oldLine, newLine)
+      savingsGoals: replaceSavingsGoalLine(
+        profile.savingsGoals,
+        oldLine,
+        newLine,
+      ),
     };
 
     await persistProfile(nextProfile, previousProfile, setIsSavingGoal);
@@ -268,16 +421,24 @@ export default function ChatPage() {
       { role: "user", content: `I updated a savings goal to: ${newLine}` },
       {
         role: "assistant",
-        content: `Updated your Goals list: **${newLine}** (was "${oldLine}").`
-      }
+        content: `Updated your Goals list: **${newLine}** (was "${oldLine}").`,
+      },
     ]);
     closeGoalModal();
   }
 
-  const isSidePanelBusy = isLoading || isSavingUpcoming || isSavingGoal;
+  const isSidePanelBusy =
+    isLoading || isSavingUpcoming || isSavingGoal || isSavingNetWorth;
 
   return (
     <section className="chat-layout">
+      <AddNetWorthItemModal
+        isOpen={isAddNetWorthOpen}
+        isSaving={isSavingNetWorth}
+        editItem={editingNetWorthItem}
+        onClose={closeNetWorthModal}
+        onSave={handleSaveNetWorthItem}
+      />
       <AddUpcomingExpenseModal
         isOpen={isAddUpcomingOpen}
         isSaving={isSavingUpcoming}
@@ -292,40 +453,190 @@ export default function ChatPage() {
         onClose={closeGoalModal}
         onSave={handleSaveSavingsGoal}
       />
-      <aside className="profile-summary">
-        <p className="eyebrow">Step 2</p>
-        <h1>
-          {profile.fullName
-            ? `${profile.fullName}'s financial consultant.`
-            : "Ask your financial consultant."}
-        </h1>
-        <p>
-          Profile completeness: <strong>{filledFields}/10</strong>
-        </p>
-        <dl>
-          <div>
-            <dt>Income</dt>
-            <dd>{profile.monthlyIncome ? `$${profile.monthlyIncome}/month` : "Not set"}</dd>
+      <aside className="dashboard-left-rail">
+        {/* Panel 1: Net Worth */}
+        <div className="side-panel">
+          <div className="side-panel-header">
+            <div className="side-panel-title">
+              <TrendingUp aria-hidden="true" />
+              <h2>Net Worth</h2>
+            </div>
+            <button
+              type="button"
+              className="side-panel-add-button secondary-button"
+              disabled={isSidePanelBusy}
+              onClick={() => {
+                setEditingNetWorthItem(null);
+                setIsAddNetWorthOpen(true);
+              }}
+            >
+              <Plus aria-hidden="true" />
+              Add
+            </button>
           </div>
-          <div>
-            <dt>Housing</dt>
-            <dd>{profile.housingCost ? `$${profile.housingCost}/month` : "Not set"}</dd>
+          {netWorthItems.length === 0 ? (
+            <div className="side-panel-empty">
+              <p>Add accounts, assets, and holdings to track your net worth.</p>
+              <button
+                type="button"
+                className="primary-button side-panel-add-button--empty"
+                disabled={isSidePanelBusy}
+                onClick={() => {
+                  setEditingNetWorthItem(null);
+                  setIsAddNetWorthOpen(true);
+                }}
+              >
+                <Plus aria-hidden="true" />
+                Add first asset
+              </button>
+            </div>
+          ) : (
+            <>
+              <ul className="nw-list">
+                {netWorthItems.map((item) => (
+                  <li key={item.id} className="nw-item">
+                    <div className="nw-item-info">
+                      <span className="nw-item-name">{item.name}</span>
+                      <span className="nw-type-badge">{item.type}</span>
+                    </div>
+                    <div className="nw-item-actions">
+                      <span className="nw-item-amount">
+                        ${(parseFloat(item.amount) || 0).toLocaleString()}
+                      </span>
+                      <button
+                        type="button"
+                        className="nw-edit-btn"
+                        aria-label={`Edit ${item.name}`}
+                        disabled={isSidePanelBusy}
+                        onClick={() => {
+                          setEditingNetWorthItem(item);
+                          setIsAddNetWorthOpen(true);
+                        }}
+                      >
+                        <Pencil aria-hidden="true" />
+                      </button>
+                      <button
+                        type="button"
+                        className="nw-delete-btn"
+                        aria-label={`Remove ${item.name}`}
+                        disabled={isSidePanelBusy}
+                        onClick={() => void handleDeleteNetWorthItem(item.id)}
+                      >
+                        <Trash2 aria-hidden="true" />
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              <p className="side-panel-footnote">
+                Total <strong>${totalNetWorth.toLocaleString()}</strong>
+              </p>
+            </>
+          )}
+        </div>
+
+        {/* Panel 2: Upcoming Expenses */}
+        <div className="side-panel">
+          <div className="side-panel-header">
+            <div className="side-panel-title">
+              <CalendarDays aria-hidden="true" />
+              <h2>Upcoming</h2>
+            </div>
           </div>
-        </dl>
-        <Link to="/onboarding" className="text-link">
-          Edit onboarding
-        </Link>
+          {upcomingItems.length === 0 ? (
+            <p className="side-panel-empty">
+              <span>No upcoming expenses yet.</span>
+            </p>
+          ) : (
+            <ol className="upcoming-compact-list">
+              {upcomingItems.map((item, index) => (
+                <li key={index} className="upcoming-compact-item">
+                  <span className="upcoming-compact-name">{item.label}</span>
+                  <div className="upcoming-compact-row">
+                    {item.urgencyLabel && (
+                      <span className="upcoming-compact-date">
+                        {item.urgencyLabel}
+                      </span>
+                    )}
+                    {item.amount !== undefined && (
+                      <span className="upcoming-compact-amount">
+                        ${item.amount.toLocaleString()}
+                      </span>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
+
+        {/* Panel 3: Monthly Summary */}
+        <div className="side-panel">
+          <div className="side-panel-header">
+            <div className="side-panel-title">
+              <BarChart3 aria-hidden="true" />
+              <h2>Monthly</h2>
+            </div>
+          </div>
+          <dl className="monthly-summary">
+            <div className="monthly-row">
+              <dt>Income</dt>
+              <dd>
+                {monthlySummary.income > 0
+                  ? `$${monthlySummary.income.toLocaleString()}`
+                  : "—"}
+              </dd>
+            </div>
+            <div className="monthly-row">
+              <dt>Expenses</dt>
+              <dd>${Math.round(monthlySummary.expenses).toLocaleString()}</dd>
+            </div>
+            <div className="monthly-row monthly-row--highlight">
+              <dt>Remaining</dt>
+              <dd
+                className={
+                  monthlySummary.remaining >= 0
+                    ? "monthly-positive"
+                    : "monthly-negative"
+                }
+              >
+                {monthlySummary.income > 0
+                  ? `$${Math.round(monthlySummary.remaining).toLocaleString()}`
+                  : "—"}
+              </dd>
+            </div>
+          </dl>
+          <Link
+            to="/onboarding"
+            className="text-link"
+            style={{ fontSize: "0.82rem" }}
+          >
+            Edit profile
+          </Link>
+        </div>
       </aside>
 
       <div className="chat-panel">
-        {isProfileLoading && <p className="status-message">Loading your saved profile...</p>}
+        {isProfileLoading && (
+          <p className="status-message">Loading your saved profile...</p>
+        )}
         <div className="messages">
           {messages.map((message, index) => (
-            <div key={`${message.role}-${index}`} className={`message ${message.role}`}>
-              <ChatMessageContent content={message.content} variant={message.role} />
+            <div
+              key={`${message.role}-${index}`}
+              className={`message ${message.role}`}
+            >
+              <ChatMessageContent
+                content={message.content}
+                variant={message.role}
+              />
             </div>
           ))}
-          {isLoading && <div className="message assistant">Thinking through your plan...</div>}
+          {isLoading && (
+            <div className="message assistant">
+              Thinking through your plan...
+            </div>
+          )}
         </div>
 
         <div className="quick-prompts" aria-busy={isSuggestionsLoading}>
@@ -348,37 +659,6 @@ export default function ChatPage() {
 
         {error && <p className="error-message">{error}</p>}
 
-        <div className="chat-side-panels-inline">
-          <SavingsGoalsPanel
-            raw={profile.savingsGoals}
-            onAsk={sendMessage}
-            onOpenAdd={() => {
-              setEditingGoalLine(null);
-              setIsAddGoalOpen(true);
-            }}
-            onEdit={(line) => {
-              setEditingGoalLine(line);
-              setIsAddGoalOpen(true);
-            }}
-            isLoading={isSidePanelBusy}
-            className="goals-panel--inline"
-          />
-          <UpcomingExpensesPanel
-            raw={profile.upcomingExpenses}
-            onAsk={sendMessage}
-            onOpenAdd={() => {
-              setEditingUpcomingLine(null);
-              setIsAddUpcomingOpen(true);
-            }}
-            onEdit={(line) => {
-              setEditingUpcomingLine(line);
-              setIsAddUpcomingOpen(true);
-            }}
-            isLoading={isSidePanelBusy}
-            className="upcoming-panel--inline"
-          />
-        </div>
-
         <form className="chat-input" onSubmit={handleSubmit}>
           <input
             value={input}
@@ -391,7 +671,8 @@ export default function ChatPage() {
           </button>
         </form>
         <p className="disclaimer">
-          FiHo uses your profile to guide budgeting, cash flow, debt, savings, and future goals.
+          FiHo uses your profile to guide budgeting, cash flow, debt, savings,
+          and future goals.
         </p>
       </div>
 
