@@ -419,18 +419,70 @@ dd {
   border-radius: 8px;
   max-width: min(78ch, 90%);
   padding: 12px 14px;
-  white-space: pre-wrap;
 }
 
 .message.assistant {
   background: #edf4ea;
   justify-self: start;
+  white-space: normal;
 }
 
 .message.user {
   background: #24583f;
   color: #ffffff;
   justify-self: end;
+  white-space: pre-wrap;
+}
+
+.message-markdown {
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.message-markdown > *:first-child {
+  margin-top: 0;
+}
+
+.message-markdown > *:last-child {
+  margin-bottom: 0;
+}
+
+.message-markdown p {
+  margin: 0 0 0.75em;
+}
+
+.message-markdown .md-heading {
+  color: #1a3d2e;
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0.5em 0 0.35em;
+}
+
+.message-markdown .md-strong {
+  color: #1f4c37;
+  font-weight: 700;
+}
+
+.message-markdown .md-list {
+  margin: 0.35em 0 0.85em;
+  padding-left: 1.35em;
+}
+
+.message-markdown .md-list--ordered {
+  list-style-type: decimal;
+}
+
+.message-markdown .md-list-item {
+  margin: 0.35em 0;
+}
+
+.message-markdown .md-list-item::marker {
+  color: #3d7a5c;
+  font-weight: 600;
+}
+
+.message.user .message-text {
+  margin: 0;
 }
 
 .quick-prompts button {

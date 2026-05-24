@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Send, Sparkles } from "lucide-react";
+import ChatMessageContent from "../components/ChatMessageContent";
 import { useAuth } from "../hooks/useAuth";
 import { loadUserProfile } from "../lib/profileRepository";
 import { emptyProfile } from "../lib/profileStorage";
@@ -134,7 +135,7 @@ export default function ChatPage() {
         <div className="messages">
           {messages.map((message, index) => (
             <div key={`${message.role}-${index}`} className={`message ${message.role}`}>
-              {message.content}
+              <ChatMessageContent content={message.content} variant={message.role} />
             </div>
           ))}
           {isLoading && <div className="message assistant">Thinking through your plan...</div>}
