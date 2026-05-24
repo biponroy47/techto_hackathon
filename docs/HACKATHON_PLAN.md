@@ -26,7 +26,7 @@ frontend/
 backend/
   - Express API
   - builds a finance-consultant prompt
-  - calls AI provider
+  - calls Groq's OpenAI-compatible API
 ```
 
 ## Why This Stack
@@ -34,6 +34,7 @@ backend/
 - React + Vite is fast to start, easy to demo, and familiar to many beginners.
 - Express keeps backend code explicit and simple.
 - TypeScript catches common mistakes without making the stack too heavy.
+- Groq has a free API tier that is useful for hackathon testing.
 - localStorage avoids database setup friction in the first hour.
 - Supabase can be added later without changing the product concept.
 
@@ -110,7 +111,7 @@ backend/
 2. Make onboarding save a profile.
 3. Make chat send a hardcoded message to the backend.
 4. Make backend return a mock response.
-5. Add real AI API key.
+5. Add real Groq API key.
 6. Include onboarding context in AI prompt.
 7. Polish UI and demo script.
 8. Add Supabase only if the core demo is already working.
@@ -149,4 +150,3 @@ create table chat_messages (
   created_at timestamptz not null default now()
 );
 ```
-

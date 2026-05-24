@@ -13,7 +13,7 @@ For the first build, keep it to two pages:
 
 - **Frontend**: React + Vite + TypeScript
 - **Backend**: Node.js + Express + TypeScript
-- **AI**: OpenAI API through the backend
+- **AI**: Groq API through the backend
 - **Database for demo**: browser localStorage first
 - **Database after demo works**: Supabase table for user profiles and chat sessions
 
@@ -54,7 +54,7 @@ If you are working on AI/backend features, create your local backend env file:
 cp backend/.env.example backend/.env
 ```
 
-Then edit `backend/.env` and add a real `OPENAI_API_KEY` if you have one. The app still runs in mock mode without a real key.
+Then edit `backend/.env` and add a real `GROQ_API_KEY` if you have one. The app still runs in mock mode without a real key.
 
 ## Team Workflow
 
