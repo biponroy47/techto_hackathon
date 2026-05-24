@@ -204,7 +204,7 @@ export default function ChatPage() {
           </button>
         </form>
         <p className="disclaimer">
-          Educational guidance only, not professional financial, tax, legal, or investment advice.
+          FiHo uses your profile to guide budgeting, cash flow, debt, savings, and future goals.
         </p>
       </div>
     </section>
