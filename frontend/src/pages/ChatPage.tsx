@@ -25,6 +25,7 @@ import AddUpcomingExpenseModal from "../components/AddUpcomingExpenseModal";
 import ChatMessageContent from "../components/ChatMessageContent";
 import SavingsGoalsPanel from "../components/SavingsGoalsPanel";
 import UpcomingExpensesPanel from "../components/UpcomingExpensesPanel";
+import { SpendingCalendar } from "../components/dashboard/SpendingCalendar";
 import { useAuth } from "../hooks/useAuth";
 import {
   DEFAULT_SUGGESTION_PROMPTS,
@@ -40,12 +41,125 @@ import {
 import {
   appendUpcomingExpense,
   parseUpcomingExpenses,
+  type UpcomingExpenseItem,
   replaceProfileLine as replaceUpcomingLine,
 } from "../lib/upcomingExpenses";
 import type { ChatMessage, FinanceProfile } from "../types";
 
 const initialAssistantMessage =
   "I can help you turn your profile into a practical budget or savings plan. What would you like to plan first?";
+
+type RecurringCalendarItem = {
+  name?: string;
+  cost?: string;
+  basis?: "monthly" | "annual";
+  recurringDate?: string;
+};
+
+function parseRecurringCalendarItems(raw: string): RecurringCalendarItem[] {
+  if (!raw.trim()) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+    return parsed as RecurringCalendarItem[];
+  } catch {
+    return [];
+  }
+}
+
+function monthsBetween(a: Date, b: Date): number {
+  return (
+    (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth())
+  );
+}
+
+function addMonths(date: Date, months: number): Date {
+  return new Date(date.getFullYear(), date.getMonth() + months, date.getDate());
+}
+
+function buildRecurringOccurrences(
+  items: RecurringCalendarItem[],
+  kind: "Subscription" | "Recurring",
+): UpcomingExpenseItem[] {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+  const horizonEnd = new Date(now.getFullYear(), now.getMonth() + 13, 0);
+  const output: UpcomingExpenseItem[] = [];
+
+  for (const item of items) {
+    const name = item.name?.trim() ?? "";
+    const recurringDate = item.recurringDate?.trim() ?? "";
+    if (!name || !recurringDate) {
+      continue;
+    }
+
+    const seed = new Date(`${recurringDate}T00:00:00`);
+    if (Number.isNaN(seed.getTime())) {
+      continue;
+    }
+
+    const cadenceMonths = item.basis === "annual" ? 12 : 1;
+    const amount = item.cost?.trim() ? Number.parseFloat(item.cost) : undefined;
+
+    let next = seed;
+    if (next < start) {
+      const diff = monthsBetween(next, start);
+      const jumps = Math.ceil(diff / cadenceMonths);
+      next = addMonths(next, jumps * cadenceMonths);
+      // Keep original due day when month length changes.
+      next = new Date(
+        next.getFullYear(),
+        next.getMonth(),
+        Math.min(
+          seed.getDate(),
+          new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate(),
+        ),
+      );
+    }
+
+    while (next <= horizonEnd) {
+      output.push({
+        label: `${kind}: ${name}`,
+        amount:
+          amount !== undefined && Number.isFinite(amount) ? amount : undefined,
+        urgencyLabel: `${MONTH_NAMES[next.getMonth()]} ${next.getDate()}, ${next.getFullYear()}`,
+        dateISO: `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}-${String(next.getDate()).padStart(2, "0")}`,
+      });
+
+      next = addMonths(next, cadenceMonths);
+      next = new Date(
+        next.getFullYear(),
+        next.getMonth(),
+        Math.min(
+          seed.getDate(),
+          new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate(),
+        ),
+      );
+    }
+  }
+
+  return output;
+}
+
+const MONTH_NAMES = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
 
 export default function ChatPage() {
   const { user, fullName } = useAuth();
@@ -154,6 +268,32 @@ export default function ChatPage() {
     () => parseUpcomingExpenses(profile.upcomingExpenses),
     [profile.upcomingExpenses],
   );
+
+  const calendarItems = useMemo(() => {
+    const subscriptionItems = parseRecurringCalendarItems(
+      profile.subscriptions,
+    );
+    const recurringItems = parseRecurringCalendarItems(
+      profile.recurringExpenses,
+    );
+
+    return [
+      ...upcomingItems,
+      ...buildRecurringOccurrences(subscriptionItems, "Subscription"),
+      ...buildRecurringOccurrences(recurringItems, "Recurring"),
+    ];
+  }, [profile.recurringExpenses, profile.subscriptions, upcomingItems]);
+
+  const calendarDate = useMemo(() => {
+    const now = new Date();
+    return {
+      year: now.getFullYear(),
+      day: now.getDate(),
+      monthName: now.toLocaleString("en-US", { month: "long" }),
+      firstWeekday: new Date(now.getFullYear(), now.getMonth(), 1).getDay(),
+      totalDays: new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate(),
+    };
+  }, []);
 
   const totalNetWorth = useMemo(
     () =>
@@ -429,6 +569,11 @@ export default function ChatPage() {
 
   const isSidePanelBusy =
     isLoading || isSavingUpcoming || isSavingGoal || isSavingNetWorth;
+  const greetingName =
+    profile.fullName.trim() ||
+    fullName?.trim() ||
+    user?.email?.split("@")[0] ||
+    "there";
 
   return (
     <section className="chat-layout">
@@ -453,6 +598,9 @@ export default function ChatPage() {
         onClose={closeGoalModal}
         onSave={handleSaveSavingsGoal}
       />
+      <div className="panel-greeting-top">
+        <h2>Hi {greetingName}</h2>
+      </div>
       <aside className="dashboard-left-rail">
         {/* Panel 1: Net Worth */}
         <div className="side-panel">
@@ -677,6 +825,16 @@ export default function ChatPage() {
       </div>
 
       <aside className="chat-right-rail chat-right-rail--sidebar">
+        <SpendingCalendar
+          month={calendarDate.monthName}
+          year={calendarDate.year}
+          startWeekday={calendarDate.firstWeekday}
+          totalDays={calendarDate.totalDays}
+          today={calendarDate.day}
+          spendingDays={{}}
+          upcomingExpenses={calendarItems}
+          className="side-panel chat-cal-panel"
+        />
         <SavingsGoalsPanel
           raw={profile.savingsGoals}
           onAsk={sendMessage}

@@ -18,23 +18,86 @@ import { SpendingCalendar } from "../components/dashboard/SpendingCalendar";
 import { SpendingBreakdown } from "../components/dashboard/SpendingBreakdown";
 import { RecentTransactions } from "../components/dashboard/RecentTransactions";
 import { LivingSituation } from "../components/dashboard/LivingSituation";
+import { loadProfile } from "../lib/profileStorage";
+import {
+  parseUpcomingExpenses,
+  type UpcomingExpenseItem,
+} from "../lib/upcomingExpenses";
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 
 const spendingDays: Record<number, "low" | "mid" | "high"> = {
-  1: "low", 2: "high", 4: "mid", 5: "low", 7: "high",
-  8: "mid", 10: "low", 11: "low", 12: "high", 14: "mid",
-  15: "low", 17: "high", 18: "mid", 20: "low", 21: "high",
-  23: "mid", 24: "low", 25: "high", 27: "mid", 28: "low",
+  1: "low",
+  2: "high",
+  4: "mid",
+  5: "low",
+  7: "high",
+  8: "mid",
+  10: "low",
+  11: "low",
+  12: "high",
+  14: "mid",
+  15: "low",
+  17: "high",
+  18: "mid",
+  20: "low",
+  21: "high",
+  23: "mid",
+  24: "low",
+  25: "high",
+  27: "mid",
+  28: "low",
 };
 
 const transactions = [
-  { id: 1, label: "Rent / Mortgage", amount: -1400, icon: Home, category: "Housing", date: "May 1" },
-  { id: 2, label: "Freelance Income", amount: +2800, icon: TrendingUp, category: "Income", date: "May 3" },
-  { id: 3, label: "Groceries", amount: -87, icon: ShoppingCart, category: "Food", date: "May 5" },
-  { id: 4, label: "Gym Membership", amount: -45, icon: Dumbbell, category: "Fitness", date: "May 8" },
-  { id: 5, label: "Internet", amount: -60, icon: Wifi, category: "Utilities", date: "May 9" },
-  { id: 6, label: "Coffee Shop", amount: -12, icon: Coffee, category: "Eating out", date: "May 11" },
+  {
+    id: 1,
+    label: "Rent / Mortgage",
+    amount: -1400,
+    icon: Home,
+    category: "Housing",
+    date: "May 1",
+  },
+  {
+    id: 2,
+    label: "Freelance Income",
+    amount: +2800,
+    icon: TrendingUp,
+    category: "Income",
+    date: "May 3",
+  },
+  {
+    id: 3,
+    label: "Groceries",
+    amount: -87,
+    icon: ShoppingCart,
+    category: "Food",
+    date: "May 5",
+  },
+  {
+    id: 4,
+    label: "Gym Membership",
+    amount: -45,
+    icon: Dumbbell,
+    category: "Fitness",
+    date: "May 8",
+  },
+  {
+    id: 5,
+    label: "Internet",
+    amount: -60,
+    icon: Wifi,
+    category: "Utilities",
+    date: "May 9",
+  },
+  {
+    id: 6,
+    label: "Coffee Shop",
+    amount: -12,
+    icon: Coffee,
+    category: "Eating out",
+    date: "May 11",
+  },
 ];
 
 const breakdown = [
@@ -76,10 +139,32 @@ export default function DashboardPage() {
     day: "numeric",
   });
 
+  // Calendar params derived from current date
+  const currentYear = today.getFullYear();
+  const currentMonth = today.getMonth(); // 0-indexed
+  const currentDay = today.getDate();
+  const monthName = today.toLocaleString("en-US", { month: "long" });
+  const firstWeekday = new Date(currentYear, currentMonth, 1).getDay();
+  const totalDays = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+  // Build upcoming expense day map from user profile
+  const profile = loadProfile();
+  const upcomingItems = parseUpcomingExpenses(profile.upcomingExpenses);
+  const upcomingExpenseDays: Record<number, UpcomingExpenseItem[]> = {};
+  for (const item of upcomingItems) {
+    if (!item.dateISO) continue;
+    const d = new Date(item.dateISO + "T00:00:00");
+    if (isNaN(d.getTime())) continue;
+    if (d.getFullYear() === currentYear && d.getMonth() === currentMonth) {
+      const day = d.getDate();
+      if (!upcomingExpenseDays[day]) upcomingExpenseDays[day] = [];
+      upcomingExpenseDays[day].push(item);
+    }
+  }
+
   return (
     <div className="dash-page">
       <div className="dash-container">
-
         {/* Header */}
         <div className="dash-header">
           <div>
@@ -96,18 +181,23 @@ export default function DashboardPage() {
         {/* Bento Grid */}
         <div className="dash-grid">
           {/* Row 1: Balance, Stats, Budget */}
-          <BalanceCard totalBalance={totalBalance} income={income} expenses={expenses} />
+          <BalanceCard
+            totalBalance={totalBalance}
+            income={income}
+            expenses={expenses}
+          />
           <QuickStats saved={saved} dailyAvg={dailyAvg} />
           <BudgetGoals goals={goals} />
 
           {/* Row 2: Calendar + Breakdown */}
           <SpendingCalendar
-            month="May"
-            year={2025}
-            startWeekday={3}
-            totalDays={31}
-            today={15}
+            month={monthName}
+            year={currentYear}
+            startWeekday={firstWeekday}
+            totalDays={totalDays}
+            today={currentDay}
             spendingDays={spendingDays}
+            upcomingExpenseDays={upcomingExpenseDays}
           />
           <SpendingBreakdown breakdown={breakdown} />
 
@@ -115,7 +205,6 @@ export default function DashboardPage() {
           <RecentTransactions transactions={transactions} onSeeAll={() => {}} />
           <LivingSituation items={livingSituation} />
         </div>
-
       </div>
     </div>
   );

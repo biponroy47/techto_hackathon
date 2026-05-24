@@ -3,6 +3,7 @@ export type UpcomingExpenseItem = {
   amount?: number;
   urgencyLabel?: string;
   monthsUntil?: number;
+  dateISO?: string;
 };
 
 const AMOUNT_PATTERN = /\$?\s*([\d,]+(?:\.\d{2})?)/;
@@ -142,7 +143,8 @@ function tryParseStructuredUpcoming(raw: string): UpcomingExpenseItem[] | null {
             : undefined;
         const urgencyLabel = parseDateLabel(row.date ?? "");
         const monthsUntil = parseDateMonths(row.date ?? "");
-        return { label: name, amount, urgencyLabel, monthsUntil };
+        const dateISO = row.date?.trim() || undefined;
+        return { label: name, amount, urgencyLabel, monthsUntil, dateISO };
       })
       .filter((item): item is UpcomingExpenseItem => item !== null);
   } catch {
