@@ -15,18 +15,18 @@ import { isSupabaseConfigured } from "../lib/supabaseClient";
 const featureCards = [
   {
     icon: WalletCards,
-    title: "Profile-aware planning",
-    copy: "Collect income, fixed costs, debts, subscriptions, and goals in one guided onboarding flow."
+    title: "See the whole horizon",
+    copy: "Bring income, cash flow, debts, subscriptions, and goals together in one personal profile."
   },
   {
     icon: MessageSquareText,
-    title: "AI budget consultant",
-    copy: "Ask practical questions about saving, budgeting, upcoming trips, and expense tradeoffs."
+    title: "Guidance when you need it",
+    copy: "Ask questions about budgeting, saving, debt payoff, upcoming costs, and future life goals."
   },
   {
     icon: CalendarDays,
-    title: "Built for the next step",
-    copy: "The structure is ready for transaction uploads and calendar-based cashflow views."
+    title: "Plan ahead with confidence",
+    copy: "Understand monthly expenses, upcoming payments, and the habits that move you forward."
   }
 ];
 
@@ -38,11 +38,11 @@ export default function LandingPage() {
     <section className="landing-page">
       <div className="landing-hero">
         <div className="hero-panel">
-          <p className="eyebrow">AI Finance Consultant</p>
-          <h1>Plan your money with a calm, personal AI advisor.</h1>
+          <p className="eyebrow">FiHo - Financial Horizon</p>
+          <h1>Your personal financial advisor for the life you want next.</h1>
           <p>
-            Create a secure financial profile, understand your monthly cash flow,
-            and get practical guidance for budgets, trips, subscriptions, and saving goals.
+            FiHo helps you understand your cash flow, budget with intention, manage debts,
+            save for future goals, and make clearer financial decisions as your life changes.
           </p>
           <div className="hero-actions">
             <Link to={primaryDestination} className="primary-button">
@@ -55,22 +55,22 @@ export default function LandingPage() {
           </div>
         </div>
 
-        <div className="finance-visual" aria-label="Animated finance consultant preview">
+        <div className="finance-visual" aria-label="Animated FiHo financial guidance preview">
           <div className="visual-card advisor-card">
             <div className="card-title">
               <Sparkles aria-hidden="true" />
-              AI Consultant
+              FiHo Advisor
             </div>
-            <div className="chat-bubble user-bubble">Can I afford a $1,200 trip?</div>
+            <div className="chat-bubble user-bubble">How do I save for a $1,200 trip?</div>
             <div className="chat-bubble agent-bubble">
-              Save $300/month and trim $90 from flexible spending.
+              Set aside $300/month and reduce flexible spending by $90.
             </div>
           </div>
 
           <div className="visual-card calculator-card">
             <div className="card-title">
               <ChartNoAxesCombined aria-hidden="true" />
-              Monthly snapshot
+              Cash flow scan
             </div>
             <div className="cost-row">
               <span>Income</span>
@@ -92,7 +92,7 @@ export default function LandingPage() {
           <div className="visual-card calendar-card">
             <div className="card-title">
               <CalendarDays aria-hidden="true" />
-              Upcoming costs
+              Financial horizon
             </div>
             <div className="mini-calendar">
               {["Rent", "Pay", "Trip", "Loan"].map((item) => (
@@ -106,9 +106,9 @@ export default function LandingPage() {
           <div className="visual-card tip-card">
             <div className="card-title">
               <PiggyBank aria-hidden="true" />
-              Saving tip
+              Goal guidance
             </div>
-            <p>Move $75 weekly into a trip fund after payday.</p>
+            <p>Move $75 weekly after payday toward your next major goal.</p>
           </div>
         </div>
       </div>
@@ -131,22 +131,22 @@ export default function LandingPage() {
         <div className="summary-header">
           <ShieldCheck aria-hidden="true" />
           <div>
-            <strong>Privacy-minded demo flow</strong>
-            <span>Use sample data for testing. Avoid real bank credentials or account numbers.</span>
+            <strong>Personal guidance, grounded in your context</strong>
+            <span>FiHo uses your profile to give clearer budgeting, cash flow, debt, and savings guidance.</span>
           </div>
         </div>
         <dl>
           <div>
-            <dt>Account</dt>
-            <dd>Save a profile with Supabase</dd>
+            <dt>Profile</dt>
+            <dd>Build your financial picture</dd>
           </div>
           <div>
-            <dt>Analysis</dt>
-            <dd>Estimate income, costs, and goals</dd>
+            <dt>Cash flow</dt>
+            <dd>Track income, costs, and timing</dd>
           </div>
           <div>
-            <dt>Advice</dt>
-            <dd>Ask the Groq-backed consultant</dd>
+            <dt>Guidance</dt>
+            <dd>Get next steps for future goals</dd>
           </div>
         </dl>
       </div>

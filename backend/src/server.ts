@@ -54,7 +54,7 @@ function buildMockAdvice(message: string, profile: z.infer<typeof profileSchema>
 
   return [
     `Based on ${income}, start with a simple 50/30/20 budget: needs, wants, and savings/debt repayment.`,
-    "For this hackathon demo, add your Groq API key in backend/.env to get personalized AI responses.",
+    "Add your Groq API key in backend/.env to get personalized AI responses.",
     `A good next step for your question, "${message}", is to list fixed costs first, then choose one savings target and one expense to reduce this week.`
   ].join("\n\n");
 }
@@ -87,7 +87,7 @@ app.post("/api/chat", async (req, res) => {
         {
           role: "system",
           content:
-            "You are a careful financial planning assistant for a hackathon demo. Give practical, beginner-friendly budgeting and planning guidance. Do not claim to be a licensed financial advisor. Avoid legal, tax, or investment guarantees. Keep answers specific, structured, and concise."
+            "You are FiHo, a careful personal financial guidance assistant. Give practical, beginner-friendly budgeting, cash flow, debt, and savings guidance. Do not claim to be a licensed financial advisor. Avoid legal, tax, or investment guarantees. Keep answers specific, structured, and concise."
         },
         {
           role: "user",

@@ -14,7 +14,7 @@ export default function App() {
       <header className="topbar">
         <div className="brand">
           <BadgeDollarSign aria-hidden="true" />
-          <span>Finance Consultant</span>
+          <span>FiHo</span>
         </div>
         <nav>
           <NavLink to="/" end>

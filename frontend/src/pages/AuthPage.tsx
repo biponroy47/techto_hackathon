@@ -81,13 +81,13 @@ export default function AuthPage() {
     <section className="auth-page">
       <div className="intro-panel">
         <p className="eyebrow">Account</p>
-        <h1>{mode === "signup" ? "Create your finance profile." : "Welcome back."}</h1>
+        <h1>{mode === "signup" ? "Create your FiHo profile." : "Welcome back to FiHo."}</h1>
         <p>
-          Your onboarding answers are saved to your account so the consultant can
-          personalize future chats.
+          Your profile helps FiHo personalize guidance for budgets, cash flow,
+          debts, savings, and the goals you want to reach.
         </p>
         <div className="tip-box">
-          Use demo data for hackathon testing. Avoid real bank details or account numbers.
+          Start with the basics. You can refine your profile as your financial horizon changes.
         </div>
       </div>
 
@@ -154,7 +154,7 @@ export default function AuthPage() {
 
         {!supabase && (
           <Link to="/onboarding" className="text-link">
-            Continue in local demo mode
+            Continue locally
           </Link>
         )}
       </form>
