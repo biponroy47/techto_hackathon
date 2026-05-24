@@ -1,7 +1,11 @@
 import { NavLink, Outlet } from "react-router-dom";
-import { BadgeDollarSign } from "lucide-react";
+import { BadgeDollarSign, LogOut } from "lucide-react";
+import { useAuth } from "./hooks/useAuth";
+import { isSupabaseConfigured } from "./lib/supabaseClient";
 
 export default function App() {
+  const { fullName, user, signOut } = useAuth();
+
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -12,7 +16,16 @@ export default function App() {
         <nav>
           <NavLink to="/">Onboarding</NavLink>
           <NavLink to="/chat">Chat</NavLink>
+          {isSupabaseConfigured && !user && <NavLink to="/auth">Log in</NavLink>}
         </nav>
+        {isSupabaseConfigured && user && (
+          <div className="account-chip">
+            <span>{fullName || user.email}</span>
+            <button type="button" onClick={() => void signOut()} aria-label="Sign out">
+              <LogOut aria-hidden="true" />
+            </button>
+          </div>
+        )}
       </header>
       <main>
         <Outlet />

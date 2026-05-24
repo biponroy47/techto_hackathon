@@ -19,7 +19,8 @@ Browser
 frontend/
   - Onboarding page
   - Chat page
-  - localStorage for demo profile
+  - Supabase Auth session
+  - Supabase profile storage
   |
   | POST /api/chat
   v
@@ -35,15 +36,15 @@ backend/
 - Express keeps backend code explicit and simple.
 - TypeScript catches common mistakes without making the stack too heavy.
 - Groq has a free API tier that is useful for hackathon testing.
-- localStorage avoids database setup friction in the first hour.
-- Supabase can be added later without changing the product concept.
+- Supabase gives each user their own onboarding profile without needing to build auth from scratch.
 
 ## Prioritized Features
 
 ### P0: Must Have
 
 1. Repo and app scaffold.
-2. Onboarding form with fields for:
+2. Account signup/login with name, email, and password.
+3. Onboarding form with fields for:
    - occupation or student status
    - monthly income
    - monthly rent or housing
@@ -52,11 +53,11 @@ backend/
    - debts
    - upcoming expenses
    - savings goals
-3. Save onboarding answers locally.
-4. Chat page loads the saved profile.
-5. Backend `/api/chat` endpoint.
-6. AI response uses the user's financial context.
-7. Clear disclaimer that responses are educational, not professional financial advice.
+4. Save onboarding answers to the user's Supabase profile.
+5. Chat page loads the saved profile.
+6. Backend `/api/chat` endpoint.
+7. AI response uses the user's financial context.
+8. Clear disclaimer that responses are educational, not professional financial advice.
 
 ### P1: Strong Demo Improvements
 
@@ -68,12 +69,11 @@ backend/
 
 ### P2: Stretch
 
-1. Supabase authentication.
-2. Supabase `profiles` and `chat_messages` tables.
-3. Upload CSV transaction files.
-4. Parse transactions into monthly inflow/outflow summaries.
-5. Calendar view for money in and money out.
-6. Export a budget plan.
+1. Supabase `chat_messages` table.
+2. Upload CSV transaction files.
+3. Parse transactions into monthly inflow/outflow summaries.
+4. Calendar view for money in and money out.
+5. Export a budget plan.
 
 ## Suggested Team Split
 
@@ -81,7 +81,7 @@ backend/
 
 - Build the form.
 - Validate numeric fields.
-- Save and load from localStorage.
+- Save and load the user's Supabase profile.
 - Add edit/reset behavior.
 
 ### Person 2: Frontend Chat
@@ -108,13 +108,13 @@ backend/
 ## Build Order
 
 1. Run the app locally.
-2. Make onboarding save a profile.
-3. Make chat send a hardcoded message to the backend.
-4. Make backend return a mock response.
-5. Add real Groq API key.
-6. Include onboarding context in AI prompt.
-7. Polish UI and demo script.
-8. Add Supabase only if the core demo is already working.
+2. Create the Supabase project and run the SQL in `docs/SUPABASE_SETUP.md`.
+3. Make signup/login work.
+4. Make onboarding save a profile.
+5. Make chat send a message and saved profile to the backend.
+6. Make backend return a mock response.
+7. Add real Groq API key.
+8. Polish UI and demo script.
 
 ## Demo Script
 
@@ -124,29 +124,19 @@ backend/
 4. Ask: "Create a weekly budget for me."
 5. Ask: "What subscriptions or expenses should I review first?"
 
-## Supabase Later
+## Supabase Stretch
 
-Add these tables when ready:
+Add chat history when ready:
 
 ```sql
-create table profiles (
-  id uuid primary key default gen_random_uuid(),
-  created_at timestamptz not null default now(),
-  occupation text,
-  monthly_income numeric,
-  housing_cost numeric,
-  recurring_expenses text,
-  subscriptions text,
-  debts text,
-  upcoming_expenses text,
-  savings_goals text
-);
-
 create table chat_messages (
   id uuid primary key default gen_random_uuid(),
-  profile_id uuid references profiles(id) on delete cascade,
+  profile_id uuid references public.profiles(id) on delete cascade,
   role text not null check (role in ('user', 'assistant')),
   content text not null,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
+
+alter table chat_messages enable row level security;
 ```

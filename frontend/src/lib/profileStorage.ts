@@ -1,6 +1,7 @@
 import type { FinanceProfile } from "../types";
 
 export const emptyProfile: FinanceProfile = {
+  fullName: "",
   occupation: "",
   status: "",
   monthlyIncome: "",

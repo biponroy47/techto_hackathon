@@ -1,4 +1,5 @@
 export type FinanceProfile = {
+  fullName: string;
   occupation: string;
   status: string;
   monthlyIncome: string;
