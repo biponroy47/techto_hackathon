@@ -10,12 +10,15 @@ const app = express();
 const port = Number(process.env.PORT ?? 8787);
 const frontendOrigin = process.env.FRONTEND_ORIGIN ?? "http://localhost:5173";
 
-const openaiApiKey = process.env.OPENAI_API_KEY?.trim();
-const hasRealOpenAiKey =
-  openaiApiKey && !["replace-me", "your-api-key-here"].includes(openaiApiKey);
+const groqApiKey = process.env.GROQ_API_KEY?.trim();
+const hasRealGroqKey =
+  groqApiKey && !["replace-me", "your-groq-api-key-here"].includes(groqApiKey);
 
-const openai = hasRealOpenAiKey
-  ? new OpenAI({ apiKey: openaiApiKey })
+const groq = hasRealGroqKey
+  ? new OpenAI({
+      apiKey: groqApiKey,
+      baseURL: "https://api.groq.com/openai/v1"
+    })
   : null;
 
 app.use(cors({ origin: frontendOrigin }));
@@ -50,7 +53,7 @@ function buildMockAdvice(message: string, profile: z.infer<typeof profileSchema>
 
   return [
     `Based on ${income}, start with a simple 50/30/20 budget: needs, wants, and savings/debt repayment.`,
-    "For this hackathon demo, add your OpenAI API key in backend/.env to get personalized AI responses.",
+    "For this hackathon demo, add your Groq API key in backend/.env to get personalized AI responses.",
     `A good next step for your question, "${message}", is to list fixed costs first, then choose one savings target and one expense to reduce this week.`
   ].join("\n\n");
 }
@@ -69,7 +72,7 @@ app.post("/api/chat", async (req, res) => {
   const { message, profile } = parsed.data;
   const profileSummary = buildProfileSummary(profile);
 
-  if (!openai) {
+  if (!groq) {
     return res.json({
       reply: buildMockAdvice(message, profile),
       mode: "mock"
@@ -77,8 +80,8 @@ app.post("/api/chat", async (req, res) => {
   }
 
   try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+    const completion = await groq.chat.completions.create({
+      model: "llama-3.1-8b-instant",
       messages: [
         {
           role: "system",
@@ -96,7 +99,7 @@ app.post("/api/chat", async (req, res) => {
       reply:
         completion.choices[0]?.message?.content ??
         "I could not generate a response. Please try again.",
-      mode: "ai"
+      mode: "groq"
     });
   } catch (error) {
     console.error(error);

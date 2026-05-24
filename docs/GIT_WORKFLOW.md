@@ -36,6 +36,12 @@ cp backend/.env.example backend/.env
 
 Do not commit `.env`. It is ignored on purpose because it can contain secret API keys.
 
+To use the real chatbot, add a free Groq API key in `backend/.env`:
+
+```bash
+GROQ_API_KEY=your-groq-api-key
+```
+
 ## Who Works Where
 
 Frontend team:
