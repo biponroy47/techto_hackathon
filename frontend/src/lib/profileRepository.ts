@@ -63,7 +63,7 @@ export async function loadUserProfile(userId?: string): Promise<FinanceProfile> 
     .maybeSingle();
 
   if (error) {
-    throw error;
+    throw new Error(`Could not load profile: ${error.message}`);
   }
 
   return rowToProfile(data);
@@ -75,9 +75,11 @@ export async function saveUserProfile(userId: string | undefined, profile: Finan
     return;
   }
 
-  const { error } = await supabase.from("profiles").upsert(profileToRow(userId, profile));
+  const { error } = await supabase
+    .from("profiles")
+    .upsert(profileToRow(userId, profile), { onConflict: "id" });
 
   if (error) {
-    throw error;
+    throw new Error(`Could not save profile: ${error.message}`);
   }
 }

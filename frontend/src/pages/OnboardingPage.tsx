@@ -221,9 +221,9 @@ export default function OnboardingPage() {
         setUpcomingExpenses(safeParseList<UpcomingExpenseItem>(savedProfile.upcomingExpenses, []));
         setSavingsGoals(safeParseList<SavingsGoalItem>(savedProfile.savingsGoals, []));
       })
-      .catch(() => {
+      .catch((loadError) => {
         if (isMounted) {
-          setError("Could not load your saved onboarding profile.");
+          setError(loadError instanceof Error ? loadError.message : "Could not load your saved onboarding profile.");
         }
       })
       .finally(() => {
@@ -320,8 +320,8 @@ export default function OnboardingPage() {
     try {
       await saveUserProfile(user?.id, buildProfileForSave());
       navigate("/chat");
-    } catch {
-      setError("Could not save your profile. Check your Supabase setup and try again.");
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Could not save your profile. Check your Supabase setup and try again.");
     } finally {
       setIsSaving(false);
     }
