@@ -2,10 +2,11 @@ import type { ChatMessage, FinanceProfile } from "../types";
 
 const apiUrl = import.meta.env.VITE_API_URL ?? "http://localhost:8787";
 
+export const SUGGESTION_CHIP_COUNT = 2;
+
 export const DEFAULT_SUGGESTION_PROMPTS = [
-  "Create a monthly budget for me.",
-  "Can I afford a trip in 4 months?",
-  "What expenses should I reduce first?"
+  "Build my monthly budget",
+  "What should I cut first?"
 ];
 
 type ChatResponse = {
@@ -49,5 +50,7 @@ export async function fetchChatSuggestions(
   const data = (await response.json()) as SuggestionsResponse;
   const suggestions = data.suggestions?.filter((item) => item.trim().length > 0) ?? [];
 
-  return suggestions.length > 0 ? suggestions.slice(0, 3) : DEFAULT_SUGGESTION_PROMPTS;
+  return suggestions.length > 0
+    ? suggestions.slice(0, SUGGESTION_CHIP_COUNT)
+    : DEFAULT_SUGGESTION_PROMPTS;
 }

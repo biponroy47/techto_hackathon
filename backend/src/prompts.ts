@@ -5,8 +5,16 @@ Your job is to help users budget, save, and plan spending using only the profile
 Tone and language:
 - Use natural, conversational English. Prefer full sentences over labels or formulas alone.
 - Address the user as "you". Be practical, encouraging, and beginner-friendly.
-- You may use light markdown when it helps readability: **bold** for emphasis, short bullet or numbered lists when comparing options.
+- Use markdown for scanability: **bold** for dollar amounts and key conclusions, short lists, and ### subheadings for sections.
 - When you include a calculation, weave it into prose (e.g. "With about $1,162 available over 4 months, that works out to roughly **$290 per month** for trip-related costs.").
+
+Response layout (important for readability):
+- Start with **one sentence** that directly answers the question (the bottom line).
+- Use ### subheadings to break longer answers into 2–4 short sections (e.g. "### Summary", "### Numbers", "### This week"). Do not use more than four sections.
+- Keep paragraphs to 1–3 sentences. Add a blank line between paragraphs.
+- Use bullet lists (- item) for steps or options; keep lists to at most 4 items.
+- Put every dollar figure in **bold** (e.g. **$290/month**).
+- End with a "### Next steps" section containing 1–2 numbered actions when giving advice.
 
 Strict formatting rules:
 - NEVER use camelCase, PascalCase identifiers, variable names, or pseudo-code labels (e.g. MaxAllowedTripExpensePerMonth, HousingCost, monthlyIncome).
@@ -19,10 +27,7 @@ Safety and scope:
 - Avoid legal, tax, or investment guarantees; keep guidance educational and general.
 - If important profile data is missing, state one reasonable assumption or ask one brief clarifying question.
 
-Answer structure (keep concise):
-1. Directly answer the user's question in the first 1–2 sentences.
-2. Support with specific numbers from their profile when available.
-3. End with one or two concrete next steps they can take this week.`;
+Keep the full answer concise (roughly 120–220 words unless the user asked for a detailed plan).`;
 
 export const PROFILE_FIELD_LABELS: Record<string, string> = {
   fullName: "Name",
@@ -60,21 +65,22 @@ ${message.trim()}
 Respond in natural language following your system instructions.`;
 }
 
+export const SUGGESTION_CHIP_COUNT = 2;
+
 export const DEFAULT_SUGGESTION_PROMPTS = [
-  "Create a monthly budget for me.",
-  "Can I afford a trip in 4 months?",
-  "What expenses should I reduce first?"
+  "Build my monthly budget",
+  "What should I cut first?"
 ];
 
 export const SUGGESTIONS_SYSTEM_PROMPT = `You generate follow-up question chips for a personal finance chat app.
 
-Return ONLY valid JSON: an array of exactly 3 strings. No markdown fences, no commentary, no keys.
+Return ONLY valid JSON: an array of exactly ${SUGGESTION_CHIP_COUNT} strings. No markdown fences, no commentary, no keys.
 
 Each string must:
-- Be a short question the user would tap to send next (about 6–14 words)
-- Use natural conversational English (never camelCase or variable names)
+- Be very short: about 4–8 words total (one brief line on screen)
+- Be a tap-to-send question in natural English (never camelCase or variable names)
 - Be a logical next step given the profile and conversation so far
-- Differ from each other (e.g. drill down, compare options, plan next action)
+- Differ from each other (e.g. drill down vs next action)
 - NOT repeat a question the user already asked word-for-word`;
 
 export function buildSuggestionsUserMessage(
@@ -91,7 +97,7 @@ ${profileSummary || "Profile not completed yet."}
 Conversation so far:
 ${transcript}
 
-Generate 3 follow-up questions the user is likely to ask next. Output JSON only.`;
+Generate exactly ${SUGGESTION_CHIP_COUNT} short follow-up questions the user is likely to ask next. Output JSON only.`;
 }
 
 export function parseSuggestionsJson(raw: string): string[] | null {
@@ -112,7 +118,7 @@ export function parseSuggestionsJson(raw: string): string[] | null {
     const suggestions = parsed
       .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
       .map((item) => item.trim().replace(/\s+/g, " "))
-      .slice(0, 3);
+      .slice(0, SUGGESTION_CHIP_COUNT);
 
     return suggestions.length > 0 ? suggestions : null;
   } catch {
@@ -127,7 +133,7 @@ export function fillSuggestions(
   const result = [...suggestions];
 
   for (const prompt of fallback) {
-    if (result.length >= 3) {
+    if (result.length >= SUGGESTION_CHIP_COUNT) {
       break;
     }
 
@@ -136,7 +142,7 @@ export function fillSuggestions(
     }
   }
 
-  return result.slice(0, 3);
+  return result.slice(0, SUGGESTION_CHIP_COUNT);
 }
 
 export function buildMockSuggestions(
@@ -148,43 +154,23 @@ export function buildMockSuggestions(
   const hasGoals = Boolean(profile.savingsGoals?.trim());
 
   if (lastUser.includes("trip") || lastUser.includes("travel") || lastUser.includes("vacation")) {
-    return [
-      "What should I cut to fund this trip?",
-      "Show me a weekly savings plan for it.",
-      "What if the trip costs more than expected?"
-    ];
+    return ["What should I cut for this trip?", "Weekly savings plan for it"];
   }
 
   if (lastUser.includes("budget")) {
-    return [
-      "How much should go to needs vs wants?",
-      "Where does my housing cost fit in?",
-      "What is one expense I should trim first?"
-    ];
+    return ["Split needs vs wants?", "One expense to trim first"];
   }
 
   if (lastUser.includes("reduce") || lastUser.includes("cut") || lastUser.includes("save")) {
-    return [
-      "Which subscription should I cancel first?",
-      "How much could I save per month?",
-      "Help me set a realistic savings target."
-    ];
+    return ["Which subscription to cancel?", "How much can I save monthly?"];
   }
 
   if (!hasIncome) {
-    return [
-      "Help me estimate a monthly budget.",
-      "What info do you need from my profile?",
-      "What should I track in onboarding?"
-    ];
+    return ["Estimate my monthly budget", "What profile info do you need?"];
   }
 
   if (!hasGoals) {
-    return [
-      "What savings goal should I set first?",
-      "How much can I save each month?",
-      "Can I afford a purchase in 3 months?"
-    ];
+    return ["First savings goal to set?", "How much can I save monthly?"];
   }
 
   return DEFAULT_SUGGESTION_PROMPTS;
