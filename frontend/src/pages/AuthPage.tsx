@@ -1,12 +1,14 @@
 import { FormEvent, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import { LogIn, UserPlus } from "lucide-react";
+import { useAuth } from "../hooks/useAuth";
 import { supabase } from "../lib/supabaseClient";
 
 type AuthMode = "signup" | "login";
 
 export default function AuthPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [mode, setMode] = useState<AuthMode>("signup");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -21,7 +23,9 @@ export default function AuthPage() {
     setMessage("");
 
     if (!supabase) {
-      setError("Supabase is not configured yet. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.");
+      setError(
+        "Supabase is not configured yet. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY."
+      );
       return;
     }
 
@@ -48,7 +52,7 @@ export default function AuthPage() {
           return;
         }
 
-        navigate("/");
+        navigate("/onboarding");
         return;
       }
 
@@ -61,12 +65,16 @@ export default function AuthPage() {
         throw signInError;
       }
 
-      navigate("/");
+      navigate("/onboarding");
     } catch (authError) {
       setError(authError instanceof Error ? authError.message : "Authentication failed.");
     } finally {
       setIsLoading(false);
     }
+  }
+
+  if (user) {
+    return <Navigate to="/onboarding" replace />;
   }
 
   return (
@@ -145,7 +153,7 @@ export default function AuthPage() {
         </button>
 
         {!supabase && (
-          <Link to="/" className="text-link">
+          <Link to="/onboarding" className="text-link">
             Continue in local demo mode
           </Link>
         )}

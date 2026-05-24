@@ -102,7 +102,11 @@ export default function ChatPage() {
     <section className="chat-layout">
       <aside className="profile-summary">
         <p className="eyebrow">Step 2</p>
-        <h1>{profile.fullName ? `${profile.fullName}'s financial consultant.` : "Ask your financial consultant."}</h1>
+        <h1>
+          {profile.fullName
+            ? `${profile.fullName}'s financial consultant.`
+            : "Ask your financial consultant."}
+        </h1>
         <p>
           Profile completeness: <strong>{filledFields}/10</strong>
         </p>
@@ -120,7 +124,7 @@ export default function ChatPage() {
             <dd>{profile.savingsGoals || "Not set"}</dd>
           </div>
         </dl>
-        <Link to="/" className="text-link">
+        <Link to="/onboarding" className="text-link">
           Edit onboarding
         </Link>
       </aside>
