@@ -53,7 +53,7 @@ const fields: Array<{
   {
     name: "upcomingExpenses",
     label: "Upcoming expenses",
-    placeholder: "Trip in August, tuition, laptop, moving costs...",
+    placeholder: "Trip $1200 in 4 months\nCar insurance $480 due Mar 15\nLaptop repair $350 this month",
     multiline: true
   },
   {

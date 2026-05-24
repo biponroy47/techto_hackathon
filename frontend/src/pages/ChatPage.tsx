@@ -2,6 +2,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "re
 import { Link } from "react-router-dom";
 import { Send, Sparkles } from "lucide-react";
 import ChatMessageContent from "../components/ChatMessageContent";
+import UpcomingExpensesPanel from "../components/UpcomingExpensesPanel";
 import { useAuth } from "../hooks/useAuth";
 import {
   DEFAULT_SUGGESTION_PROMPTS,
@@ -192,6 +193,13 @@ export default function ChatPage() {
 
         {error && <p className="error-message">{error}</p>}
 
+        <UpcomingExpensesPanel
+          raw={profile.upcomingExpenses}
+          onAsk={sendMessage}
+          isLoading={isLoading}
+          className="upcoming-panel--inline"
+        />
+
         <form className="chat-input" onSubmit={handleSubmit}>
           <input
             value={input}
@@ -207,6 +215,13 @@ export default function ChatPage() {
           Educational guidance only, not professional financial, tax, legal, or investment advice.
         </p>
       </div>
+
+      <UpcomingExpensesPanel
+        raw={profile.upcomingExpenses}
+        onAsk={sendMessage}
+        isLoading={isLoading}
+        className="upcoming-panel--sidebar"
+      />
     </section>
   );
 }
